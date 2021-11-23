@@ -118,10 +118,36 @@ type bmap struct {
 ```
 bmap 就是我们常说的“桶”，桶里面会最多装 8 个 key，这些 key 之所以会落入同一个桶，是因为它们经过哈希计算后，哈希结果是“一类”的。在桶内，又会根据 key 计算出来的 hash 值的高 8 位来决定 key 到底落入桶内的哪个位置（一个桶内最多有8个位置）。  
 
-
+[断点调试map的编译过程](https://github.com/ymm135/golang-cookbook/blob/master/md/base/source/debug.md) ，首先看下调用栈:  
+```
+cmd_local/compile/internal/gc.bmap at reflect.go:90
+cmd_local/compile/internal/gc.hmap at reflect.go:199
+cmd_local/compile/internal/gc.walkexpr at walk.go:1207
+cmd_local/compile/internal/gc.walkexpr at walk.go:626
+cmd_local/compile/internal/gc.litas at sinit.go:385
+cmd_local/compile/internal/gc.maplit at sinit.go:758
+cmd_local/compile/internal/gc.anylit at sinit.go:949
+cmd_local/compile/internal/gc.oaslit at sinit.go:981
+cmd_local/compile/internal/gc.walkexpr at walk.go:611
+cmd_local/compile/internal/gc.walkstmt at walk.go:149
+cmd_local/compile/internal/gc.walkstmtlist at walk.go:81
+cmd_local/compile/internal/gc.walk at walk.go:65
+cmd_local/compile/internal/gc.compile at pgen.go:239
+cmd_local/compile/internal/gc.funccompile at pgen.go:220
+cmd_local/compile/internal/gc.Main at main.go:762
+main.main at main.go:52
+runtime.main at proc.go:225
+runtime.goexit at asm_amd64.s:1371
+ - Async stack trace
+runtime.rt0_go at asm_amd64.s:226
+```
+ 
+ 
  
   
 ## Hash函数    
 
-## 通过test调试map源码  
+## 通过IDEA调试map源码
+如果想要连接map编译过程，可以使用编译器断点调试go compile源码。[断点调试源码教程](https://github.com/ymm135/golang-cookbook/blob/master/md/base/source/debug.md)   
+ 
 
