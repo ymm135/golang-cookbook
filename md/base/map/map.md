@@ -43,6 +43,8 @@
 ```
 package main
 
+import "fmt"
+
 func main() {
 	name2Everything := make(map[string]interface{})
 	name2Everything["xiaoming"] = "100"
@@ -55,6 +57,7 @@ func main() {
 	name2Everything["6"] = 6
 	name2Everything["7"] = 7
 	name2Everything["8"] = 8
+	fmt.Println(name2Everything)
 }
 ```
 
@@ -141,11 +144,168 @@ runtime.goexit at asm_amd64.s:1371
  - Async stack trace
 runtime.rt0_go at asm_amd64.s:226
 ```
+
+其中转换的部分在`cmd_local/compile/internal/gc.walkexpr` 
+在编译的类型检查期间，make(map[]) 以及类似的操作都会被转换成哈希的 `OMAKEMAP` 操作，
+中间代码生成阶段会在 `cmd/compile/internal/gc.walkexpr` 函数中将这些 `OMAKEMAP` 操作转换成如下的代码：
+
+- 第一种map创建方式
+```
+// Call runtime.makehmap to allocate an
+// hmap on the heap and initialize hmap's hash0 field.
+fn := syslook("makemap_small")
+fn = substArgTypes(fn, t.Key(), t.Elem())
+n = mkcall1(fn, n.Type, init)
+```
  
+- 第二种map创建方式
+```
+// var h *hmap
+var h *Node
+
+// Allocate hmap on stack.
+// var hv hmap
+hv := temp(hmapType)
+
+// h = &hv
+h = nod(OADDR, hv, nil)
+
+// In case hint is larger than BUCKETSIZE runtime.makemap
+// will allocate the buckets on the heap, see #20184
+//
+// if hint <= BUCKETSIZE {
+//     var bv bmap
+//     b = &bv
+//     h.buckets = b
+// }
+nif := nod(OIF, nod(OLE, hint, nodintconst(BUCKETSIZE)), nil)
+nif.SetLikely(true)
+
+// var bv bmap
+bv := temp(bmap(t))
+zero = nod(OAS, bv, nil)
+nif.Nbody.Append(zero)
+
+// b = &bv
+b := nod(OADDR, bv, nil)
+
+// h.buckets = b
+bsym := hmapType.Field(5).Sym // hmap.buckets see reflect.go:hmap
+na := nod(OAS, nodSym(ODOT, h, bsym), b)
+nif.Nbody.Append(na)
+
+nif = typecheck(nif, ctxStmt)
+nif = walkstmt(nif)
+init.Append(nif)
+
+```
+
+**从以上代码可以看出，`make(map[string]interface{})`被解析成多条语句**  
+- 第一种map创建方式
+```
+// make(map[string]interface{})
+func makemap_small() (hmap map[any]any)
+```
+
+- 第二种map创建方式
+```
+// make(map[string]interface{})
+var h *hmap
+var hv hmap
+h = &hv
+
+if hint <= BUCKETSIZE {
+     var bv bmap
+     b = &bv
+     h.buckets = b
+}
+```
+
+到这里map就已经创建完毕了. 已经修改了原来的语法树了
+```
+default:
+			n.Right = walkexpr(n.Right, init)
+
+# 增加的节点在追加到init节点上
+init.Append(nif)  
+```  
  
- 
+> OMAKEMAP 是 Node ops， 代表含义:  make(Type, Left) (type is map)   
+> 在编译时，所有的操作都是在语法树上进行的，每个节点叫做Node，操作叫做OADD、OMAKEMAP 
+
+- **那可以看一下makemap之前和之后，语法树的差异?**  
+可以先查看`map.go`语法树的情况，在查看编译之后的语法树.  
+
+编译前的语法树:  
+![map ast语法树](../../../res/map_ast.png)  
+
+`Dump("make NODE", n)` Dump节点:
+```
+make before [0xc0003c1a00]
+.   MAKEMAP l(6) esc(h) tc(1) MAP-map[string]interface {}
+.   .   LITERAL-0 l(6) untyped int
+
+--------------------------------------------------------------------
+
+make after [0xc0005b7a80]
+.   CALLFUNC l(6) tc(1) hascall MAP-map[string]interface {}
+.   .   NAME-runtime.makemap_small x(0) class(PFUNC) tc(1) used FUNC-func() map[string]interface {}
+```
+
+编译后的语法树把MAP-map[string]interface转换为具体的创建语句 NAME-runtime.makemap_small  
+
+可以通过编译期间查看bmap的具体结构是通过`reflect.go`中的`func bmap(t *types.Type) *types.Type`,返回的bucket结构为:  
+
+```
+field := make([]*types.Field, 0, 5)
+
+field = append(field, makefield("topbits", arr))
+keys := makefield("keys", arr)
+elems := makefield("elems", arr)
+overflow := makefield("overflow", otyp)
+
+```
+
+结构体为:
+```
+// (64-bit, 8 byte keys and elems)
+//	maxKeySize  = 128
+//	maxElemSize = 128
+type bmap struct {
+    topbits  [8]uint8
+    keys     [8]keytype
+    elems    [8]valuetype
+    overflow uintptr
+}
+```
+
+与`compile/internal/gc/reflect.go`中描述的一样
+```
+// A bucket for a Go map.
+type bmap struct {
+	// tophash generally contains the top byte of the hash value
+	// for each key in this bucket. If tophash[0] < minTopHash,
+	// tophash[0] is a bucket evacuation state instead.
+	tophash [bucketCnt]uint8
+	// Followed by bucketCnt keys and then bucketCnt elems.
+	// NOTE: packing all the keys together and then all the elems together makes the
+	// code a bit more complicated than alternating key/elem/key/elem/... but it allows
+	// us to eliminate padding which would be needed for, e.g., map[int64]int8.
+	// Followed by an overflow pointer.
+}
+```
+> // Followed by bucketCnt keys and then bucketCnt elems.
+> // Followed by an overflow pointer.   
+
+
   
 ## Hash函数    
+
+## MAP基本操作
+### 增加、写入
+### 读取
+### 删除
+### 扩容
 
 ## 通过IDEA调试map源码
 如果想要连接map编译过程，可以使用编译器断点调试go compile源码。[断点调试源码教程](https://github.com/ymm135/golang-cookbook/blob/master/md/base/source/debug.md)   
