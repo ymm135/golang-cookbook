@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 func main() {
 	m := map[string]string{
@@ -9,6 +12,11 @@ func main() {
 		"site":    "imooc",
 		"quality": "notbad",
 	}
+
+	for i := 0; i < 21; i++ {
+		m[strconv.Itoa(i)] = strconv.Itoa(i)
+	}
+
 	delete(m, "name")
-	fmt.Println(m)
+	fmt.Println("Hello Go")
 }

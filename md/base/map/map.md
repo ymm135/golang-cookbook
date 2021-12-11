@@ -3,6 +3,15 @@
 [参考文章](https://draveness.me/golang/docs/part2-foundation/ch03-datastructure/golang-hashmap/)  
 ![哈希表](../../../res/hash_map.png)      
 
+### [散列表(Hash Table)](https://zh.wikipedia.org/wiki/%E5%93%88%E5%B8%8C%E8%A1%A8)    
+
+![](../../../res/hash-table-struct.png)  
+
+<br>
+
+![](../../../res/wiki-hash-table1.png)  
+
+![](../../../res/wiki-hash-table2.png)  
 
 ### gdb 查看map数据结构 
 ![gdb查看map数据结构](../../../res/gdb_map.png)  
@@ -294,15 +303,19 @@ type bmap struct {
 	// Followed by an overflow pointer.
 }
 ```
-> // Followed by bucketCnt keys and then bucketCnt elems.
+> // Followed by bucketCnt keys and then bucketCnt elems.  
 > // Followed by an overflow pointer.   
 
 
   
-## Hash函数    
+## Hash函数
 
 ## MAP基本操作
 ### 增加、写入
+
+map的创建代码是在编译时候完成的，相当于在堆上申请一块内存，创建了map结构，但是如何填充数据的呢？  
+
+
 ### 读取
 ### 删除
 ### 扩容
