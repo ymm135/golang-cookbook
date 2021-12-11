@@ -22,8 +22,14 @@
 ---
 # 中间件
 ## nginx
+### [基础](md/middleware/nginx/nginx-base.md)  
+
 ## es 
 ### [es基础](md/middleware/es/es-base.md)
 ### [ELK](md/middleware/es/elk.md)
+
 ## redis
+### [基础](md/middleware/redis/redis-base.md)
+
 ## pgsql
+### [基础](md/middleware/pgsql/pgsql-base.md)  

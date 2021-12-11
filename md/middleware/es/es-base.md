@@ -1,4 +1,6 @@
 # ES基础
+## [官网安装](https://www.elastic.co/guide/en/elastic-stack/6.8/installing-elastic-stack.html)  
+
 ## docker搭建es 6.8
 
 ```
@@ -52,7 +54,7 @@ docker run -d --name kibana --link elasticsearch -p 5601:5601  docker.elastic.co
 
 ![kibana](../../../res/kibana.png)  
 
-
+### 
 
 
 
