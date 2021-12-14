@@ -30,6 +30,8 @@
 
 ## redis
 ### [基础](md/middleware/redis/redis-base.md)
+### [redis数据结构](./md/middleware/redis/redis-data-structure.md)  
+### [redis持久化](./md/middleware/redis/redis-db.md)  
 
 ## pgsql
 ### [基础](md/middleware/pgsql/pgsql-base.md)  
