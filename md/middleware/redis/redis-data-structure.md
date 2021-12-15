@@ -1,4 +1,4 @@
-# redis 数据结构
+# redis 3.0数据结构
 ## [调试redis 3.0源码](https://github.com/ymm135/redis-3.0-annotated)  
 
 ```
@@ -183,7 +183,7 @@ address                                |                          |        |
 OK
 ```
 插入过程理解:  
-![redis-list-push](../../../res/redis-hash-ziplist.png)  
+![redis-hash-ziplist](../../../res/redis-hash-ziplist.png)  
 
 ```
 /* Add an element, discard the old if the key already exists.

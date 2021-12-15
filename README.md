@@ -30,7 +30,8 @@
 
 ## redis
 ### [基础](md/middleware/redis/redis-base.md)
-### [redis数据结构](./md/middleware/redis/redis-data-structure.md)  
+### [redis3.0数据结构](./md/middleware/redis/redis-data-structure.md)  
+### [redis4.x数据结构](./md/middleware/redis/redis4-data-structure.md)
 ### [redis持久化](./md/middleware/redis/redis-db.md)  
 
 ## mongo
