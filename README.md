@@ -26,7 +26,15 @@
 
 ## es 
 ### [es基础](md/middleware/es/es-base.md)
-### [ELK](md/middleware/es/elk.md)
+### [ELK](md/middleware/es/elk.md)  
+
+## rabbitmq
+### [基础](md/middleware/rabbitmq/rabbitmq-bases.md)
+
+## kafka  
+### [基础](md/middleware/kafka/kafka-base.md)  
+### [日志采集及分析](md/middleware/kafka/kafka-log.md)  
+### [大数据统计及分析](md/middleware/kafka/kafka-bigdata.md)   
 
 ## redis
 ### [基础](md/middleware/redis/redis-base.md)
