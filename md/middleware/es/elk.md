@@ -73,5 +73,12 @@ output {
 }
 ```
 
+## mysql同步工具[canal](https://github.com/alibaba/canal)   
+
+原理  
+![canal.png](../../../res/canal.png)  
+
+[docker安装](https://github.com/alibaba/canal/wiki/Docker-QuickStart)  
+
 
 
