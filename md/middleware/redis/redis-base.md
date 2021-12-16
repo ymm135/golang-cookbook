@@ -155,6 +155,64 @@ OK
 2) "allkeys-lru"
 ```
 
+## 过期键删除策略  
+
+```
+127.0.0.1:6379> set name xiaoming
+OK
+127.0.0.1:6379> get name
+"xiaoming"
+127.0.0.1:6379> TTL name  # 没有过期时间, 返回值为-1  
+(integer) -1
+127.0.0.1:6379> EXPIRE name 10 
+(integer) 1
+127.0.0.1:6379> TTL name  # 设置过期时间后，返回过期剩余时间  
+(integer) 8
+127.0.0.1:6379> TTL name
+(integer) 7
+127.0.0.1:6379> TTL name
+(integer) 6
+127.0.0.1:6379> TTL name
+(integer) 5
+127.0.0.1:6379> TTL name
+(integer) 4
+127.0.0.1:6379> TTL name
+(integer) 1
+127.0.0.1:6379> TTL name  # 如果过去后，就会返回-2  
+(integer) -2
+```
+
+Redis的过期删除策略就是：惰性删除和定期删除两种策略配合使用。  
+惰性删除：Redis的惰性删除策略由 `db.c/expireIfNeeded` 函数实现，所有键读写命令执行之前都会调用 expireIfNeeded 函数对其进行检查，如果过期，则删除该键，然后执行键不存在的操作；未过期则不作操作，继续执行原有的命令。  
+
+定期删除：由`redis.c/activeExpireCycle` 函数实现，函数以一定的频率运行，每次运行时，都从一定数量的数据库中取出一定数量的随机键进行检查，并删除其中的过期键。  
+
+注意：并不是一次运行就检查所有的库，所有的键，而是随机检查一定数量的键。  
+
+定期删除函数的运行频率，在Redis2.6版本中，规定每秒运行10次，大概100ms运行一次。在Redis2.8版本后，可以通过修改配置文件redis.conf 的 `hz` 选项来调整这个次数。  
+
+
+过期删除还是需要到对应数据结构中清除`dictDelete(db->dict,key->ptr)`    
+```
+/* Delete a key, value, and associated expiration entry if any, from the DB */
+int dbSyncDelete(redisDb *db, robj *key) {
+    /* Deleting an entry from the expires dict will not free the sds of
+     * the key, because it is shared with the main dictionary. */
+    if (dictSize(db->expires) > 0) dictDelete(db->expires,key->ptr);
+    if (dictDelete(db->dict,key->ptr) == DICT_OK) {
+        if (server.cluster_enabled) slotToKeyDel(key);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+```  
+
+
+
+
+
+
 
 
 
