@@ -1,7 +1,9 @@
 # 源码调试 
 
 ## 编译源码  
-从官网下载源码，修改源码，比如Println  
+go源码下载地址`https://go.dev/dl/go1.16.9.src.tar.gz`, 放到到路径为`/Users/zero/go/sdk/source`，go源码路径为`/Users/zero/go/sdk/source1.16.9/go`  
+
+从官网下载源码，修改源码，比如`source1.16.9/go/src/fmt/print.go`下`Println`函数    
 ```
 func Println(a ...interface{}) (n int, err error) {
 	println("_xiao_")
@@ -22,7 +24,7 @@ Installed Go for darwin/amd64 in /Users/zero/Downloads/go
 Installed commands in /Users/zero/Downloads/go/bin
 ```  
 
-把当前的GOROOT切换为编译好的路径: `export GOROOT=/Users/zero/go/sdk/test`
+把当前的GOROOT切换为编译好的路径: `export GOROOT=/Users/zero/go/sdk/source1.16.9/go`
 
 ```
 package main
@@ -40,7 +42,7 @@ Hello World
 ```  
 
 ## 调试编译过程  
-就是用map创建时bmap明确的过程，源码版本是1.16.9，代码位置是 `go1.16.9/src/cmd/compile/internal/gc/reflect.go:83`  
+就是用map创建时bmap明确的过程，源码版本是1.16.9，代码位置是 `source1.16.9/go/src/cmd/compile/internal/gc/reflect.go:83`  
 
 在源码处增加map类型打印`fmt.Println("_bmap_", t)`:  
 
@@ -71,7 +73,8 @@ func main() {
 	fmt.Println(m)
 }
 ```
-`go build -x map.go `编译输出:  
+`go build -x map.go `编译输出: 
+> 这个`go build`使用的是源码中的`build`可执行文件，这里通过修改`export GOROOT`实现  
 ```
 # 使用库的位置, 比如fmt : packagefile fmt=/Users/zero/go/sdk/test/pkg/darwin_amd64/fmt.a 
 zerodeMacBook-Pro:Downloads zero$ go build -x map.go 
@@ -193,7 +196,7 @@ $ ar -x pkg/darwin_amd64/fmt.a
 go build || go run     
 ```  
 
-Go 语言的编译器入口在 `src/cmd/compile/internal/gc/main.go` 文件中，
+Go 语言的**编译器**入口在 `src/cmd/compile/internal/gc/main.go` 文件中，
 其中 600 多行的 `cmd/compile/internal/gc.Main` 就是 Go 语言编译器的主程序，
 该函数会先获取命令行传入的参数并更新编译选项和配置，随后会调用 `cmd/compile/internal/gc.parseFiles` 
 对输入的文件进行词法与语法分析得到对应的抽象语法树：
@@ -234,7 +237,8 @@ drwxr-xr-x  28 zero  staff   896 Nov 23 15:01 internal_local
 -rw-r--r--   1 zero  staff  3626 Nov 23 15:31 modules.txt
 ```
 
-这样就行了，可以直接编译，断点调试
+这样就行了，可以直接编译，断点调试  
+[可调试的golang源码](git@github.com:ymm135/go.git)  
 
 ![go源码调试1](../../../res/debug_source.png)  
 
