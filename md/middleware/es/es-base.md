@@ -32,6 +32,74 @@ docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=
 }
 ```
 
+es集群`docker-compose.yml`  
+```
+version: '3'
+services:
+  elasticsearch_n0:
+    image: elasticsearch:6.8.20
+    container_name: elasticsearch_n0
+    privileged: true
+    environment:
+      - cluster.name=elasticsearch-cluster
+      - node.name=node0
+      - node.master=true
+      - node.data=true
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch_n0,elasticsearch_n1,elasticsearch_n2"
+      - "discovery.zen.minimum_master_nodes=2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+  elasticsearch_n1:
+    image: elasticsearch:6.8.20
+    container_name: elasticsearch_n1
+    privileged: true
+    environment:
+      - cluster.name=elasticsearch-cluster
+      - node.name=node1
+      - node.master=true
+      - node.data=true
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch_n0,elasticsearch_n1,elasticsearch_n2"
+      - "discovery.zen.minimum_master_nodes=2"
+    volumes:
+      - ./data/node1:/usr/share/elasticsearch/data
+      - ./logs/node1:/usr/share/elasticsearch/logs
+    ports:
+      - 9201:9200
+  elasticsearch_n2:
+    image: elasticsearch:6.8.20
+    container_name: elasticsearch_n2
+    privileged: true
+    environment:
+      - cluster.name=docker-cluster
+      - node.name=node2
+      - node.master=true
+      - node.data=true
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch_n0,elasticsearch_n1,elasticsearch_n2"
+      - "discovery.zen.minimum_master_nodes=2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9202:9200
+```
+
 ## 使用elasticsearch head插件
 
 ### 查看节点信息

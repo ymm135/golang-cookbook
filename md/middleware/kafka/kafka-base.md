@@ -29,6 +29,8 @@ kafka信息
 
 ![flink-demo.png](../../../res/flink-demo.png)  
 
+![flink-shouye.png](../../../res/flink-shouye.png)  
+
 大数据处理技术栈[来自慕课](https://class.imooc.com/sale/bigdata)    
 ![大数据处理.png](../../../res/大数据处理.png)  
 
