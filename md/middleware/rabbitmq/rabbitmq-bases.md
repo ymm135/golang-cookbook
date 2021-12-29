@@ -61,6 +61,40 @@ public class MQConfig {
 
 
 ## go 发送与订阅  
-[官网demo](https://www.rabbitmq.com/tutorials/tutorial-three-go.html)  
+[官网demo](https://www.rabbitmq.com/tutorials/tutorial-three-go.html)   
+
+## 队列上线配置  
+目前使用MQ作为网络数据包缓存，可能瞬间流量超过10w+/s，直接导致程序队列溢出，JVM-OOM，通过设置队列大小
+超过队列上线后，直接丢弃早期数据  
+
+[设置参数及策略](https://www.rabbitmq.com/parameters.html#policies)  
+[队列上线设置](https://www.rabbitmq.com/maxlength.html)  
+
+修改策略配置(队列最大消息个数为2):
+```
+rabbitmqctl set_policy my-pol "^two-messages$" \
+  '{"max-length":2,"overflow":"reject-publish"}' \
+  --apply-to queues
+```
+
+manager ui
+
+<br>
+<div align=center>
+    <img src="../../../res/队列参数设置.png" width="70%" height="60%" title="队列参数设置"></img>  
+</div>
+<br>
+
+通过ui往队列中push playload为`1,2,3`的三条数据，获取第一条数据是`2` 
+
+![exchange1-length](../../../res/exchange1-length.png)  
+
+exchange设置参数不生效，虽然显示`Lim`  
+
+
+
+
+
+
 
 
