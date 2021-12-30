@@ -10,7 +10,7 @@ type ManProxy struct {
 	manProxy IMan // 不能是指针
 }
 
-func (proxy *ManProxy) setProxy(man IMan) () {
+func (proxy *ManProxy) setProxy(man IMan) {
 	proxy.manProxy = man
 }
 
@@ -21,6 +21,8 @@ func (proxy *ManProxy) Walk() int {
 }
 
 type Man struct {
+	name string
+	age  int
 }
 
 func (man *Man) Walk() int {
@@ -31,7 +33,7 @@ func (man *Man) Walk() int {
 func main() {
 	manProxy := &ManProxy{} // 是不是指针都行
 	var manImpl IMan
-	var man Man
+	man := Man{name: "xiaoming", age: 18}
 	manImpl = &man //需要取地址, 调用man具体实现,而不是复制
 
 	manProxy.setProxy(manImpl)

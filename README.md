@@ -4,11 +4,11 @@
 
 ## 数据结构
 ### [内建容器简介](https://github.com/ymm135/go-coding/blob/main/docs/3_%E5%86%85%E5%BB%BA%E5%AE%B9%E5%99%A8.md)  
-### [array/slice](code/base/array/array-slice.md)  
+### [array/slice](md/base/array/array-slice.md)  
 ### [map](./md/base/map/map.md)
 ### [字符串](./md/base/string/string.md)  
-### [结构体]()    
-### [指针]()  
+### [结构体](md/base/object/struct.md)    
+### [接口](md/base/object/interface.md)  
 
 ## 常用关键字  
 ### [defer数据结构及实现](md/base/keyword/defer.md)    
@@ -21,7 +21,7 @@
 
 ## 反射
 ### [反射基础介绍](https://github.com/ymm135/go-coding/blob/main/lang/reflect/README.md)  
-### [静态代理]()
+### [静态代理](md/base/reflect/static-proxy.md)
 
 ## [go编译器和链接器](https://github.com/ymm135/go-build)  
 ## [cgo调用c/c++](https://github.com/ymm135/go-coding/blob/main/lang/c_cpp/README.md)     
