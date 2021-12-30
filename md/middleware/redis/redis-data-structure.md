@@ -1,7 +1,7 @@
 # redis 3.0数据结构
 ## [调试redis 3.0源码](https://github.com/ymm135/redis-3.0-annotated)  
 
-```
+```shell
 src/t_hash.c    # hash
 src/t_list.c    # list
 src/t_set.c     # set
@@ -12,7 +12,7 @@ src/t_zset.c    # zset ZSET 同时使用两种数据结构来持有同一个元�
 
 ## [ziplist数据结构](https://mp.weixin.qq.com/s?__biz=MzI2MDQzMTU2MA==&mid=2247484130&idx=1&sn=f9677e06b5fccfd0696a68c431b3f013&chksm=ea688945dd1f00533ef41bfc97041704a7d2a4318ffa4387a03f4b52e9d959ed005ab930599f&token=1987875319&lang=zh_CN#rd)      
 
-```
+```shell
 非空 ziplist 示例图
 
 area        |<---- ziplist header ---->|<----------- entries ------------->|<-end->|
@@ -41,7 +41,7 @@ address                                |                          |        |
 ```  
 
 列表的创建:  
-```
+```js
 /*
  * 创建一个 ZIPLIST 编码的列表对象
  */
@@ -115,7 +115,7 @@ unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int sle
 
 ziplist的数据结构  
 
-```
+```shell
 /* 
 空白 ziplist 示例图
 

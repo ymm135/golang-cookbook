@@ -5,7 +5,7 @@
 
 ## docker 安装
 
-```
+```shell
 docker run -p 6379:6379 --name redis -d redis:5.0 --requirepass 'redis'
 
 > config set requirepass redis
@@ -13,7 +13,7 @@ docker run -p 6379:6379 --name redis -d redis:5.0 --requirepass 'redis'
 
 ## 容器
 ### [list](https://redis.io/commands#list)  
-```
+```shell
 127.0.0.1:6379> LPUSH mylist "world"
 (integer) 1
 127.0.0.1:6379> LPUSH mylist "hello"
@@ -32,7 +32,7 @@ docker run -p 6379:6379 --name redis -d redis:5.0 --requirepass 'redis'
 
 ### [hash](https://redis.io/commands#hash)  
 
-```
+```shell
 127.0.0.1:6379> HMSET myhash field1 "Hello" field2 "World"
 OK
 127.0.0.1:6379> HGET myhash field1
@@ -49,7 +49,7 @@ OK
 
 ### [sets](https://redis.io/commands#set)  
 
-```
+```shell
 127.0.0.1:6379> SADD myset "one"
 (integer) 1
 127.0.0.1:6379> SADD myset "two"
@@ -86,12 +86,12 @@ OK
 
 - 订阅的不是字段/key, 而是channel
 
-```
+```shell
 SUBSCRIBE foo bar [channel ...]
 ```
 
 - 如果没有订阅，发布消息到channel会失败
-```
+```shell
 127.0.0.1:6379> PUBLISH foo redis
 (integer) 1
 127.0.0.1:6379> PUBLISH foo 2
@@ -112,7 +112,7 @@ maxmemory 100mb
 ```
 
 命令行设置
-```
+```shell
 127.0.0.1:6379> config get maxmemory
 1) "maxmemory"
 2) "0"
@@ -144,7 +144,7 @@ maxmemory-policy noeviction
 ```
 
 命令行设置:
-```
+```shell
 127.0.0.1:6379> config get maxmemory-policy
 1) "maxmemory-policy"
 2) "noeviction"
@@ -157,7 +157,7 @@ OK
 
 ## 过期键删除策略  
 
-```
+```shell
 127.0.0.1:6379> set name xiaoming
 OK
 127.0.0.1:6379> get name
@@ -193,7 +193,7 @@ Redis的过期删除策略就是：惰性删除和定期删除两种策略配合
 
 
 过期删除还是需要到对应数据结构中清除`dictDelete(db->dict,key->ptr)`    
-```
+```js
 /* Delete a key, value, and associated expiration entry if any, from the DB */
 int dbSyncDelete(redisDb *db, robj *key) {
     /* Deleting an entry from the expires dict will not free the sds of

@@ -3,7 +3,7 @@
 
 ## docker搭建es 6.8
 
-```
+```shell
 # 拉取镜像
 docker pull docker.elastic.co/elasticsearch/elasticsearch:6.8.20
 
@@ -12,7 +12,7 @@ docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=
 ```
 
 访问`http://localhost:9200/`
-```
+```json
 {
   "name" : "cefBBBH",
   "cluster_name" : "docker-cluster",
@@ -33,7 +33,7 @@ docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=
 ```
 
 es集群`docker-compose.yml`  
-```
+```yaml
 version: '3'
 services:
   elasticsearch_n0:
@@ -110,7 +110,7 @@ services:
 ## 使用kibana  
 ### 安装 
 
-```
+```shell
 # 拉取镜像
 docker pull docker.elastic.co/kibana/kibana:6.8.20
 

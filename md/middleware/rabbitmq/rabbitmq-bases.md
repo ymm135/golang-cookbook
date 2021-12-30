@@ -3,7 +3,7 @@
 
 ## docker 安装
 
-```
+```shell
 # 携带管理界面的
 docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672  -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin rabbitmq:3.7.7-management  
 
@@ -14,7 +14,7 @@ http://localhost:15672
 ## java 发送与订阅  
 
 [java spring demo](https://www.rabbitmq.com/tutorials/tutorial-three-spring-amqp.html)    
-```
+```java
 @Configuration
 public class MQConfig {
 
@@ -50,7 +50,7 @@ public class MQConfig {
 
 > 可以直接订阅 `exchange`，但是在绑定时，仍要增加一个`queue name`  
 
-```
+```java
  @RabbitListener(queues = MQConfig.QUEUE_NAME)
     public void rawPackerRecv(String msg) { //(byte[] msg)
     
@@ -71,7 +71,7 @@ public class MQConfig {
 [队列上线设置](https://www.rabbitmq.com/maxlength.html)  
 
 修改策略配置(队列最大消息个数为2):
-```
+```shell
 rabbitmqctl set_policy my-pol "^two-messages$" \
   '{"max-length":2,"overflow":"reject-publish"}' \
   --apply-to queues

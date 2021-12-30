@@ -49,7 +49,7 @@
 
 ### 通过debug源码查看map结构  
 
-```
+```go
 package main
 
 import "fmt"
@@ -74,7 +74,7 @@ func main() {
 查看编译器参数已经禁止编译器优化: `go build -o go_build_map_struct_go -gcflags "all=-N -l"ap_struct.go #gosetup`  
 
 make创建map调用的代码是:  
-```
+```go
 // makemap_small implements Go map creation for make(map[k]v) and
 // make(map[k]v, hint) when hint is known to be at most bucketCnt
 // at compile time and the map needs to be allocated on the heap.
@@ -87,7 +87,7 @@ func makemap_small() *hmap {
 [make与new的区别](https://draveness.me/golang/docs/part2-foundation/ch05-keyword/golang-make-and-new/)  
 
 其中需要注意buckets 是一个指针，最终它指向的是一个结构体：
-```
+```go
 type bmap struct {
     tophash [bucketCnt]uint8
 }
@@ -96,7 +96,7 @@ type bmap struct {
 go1.16.9/src/cmd/compile/internal/gc/reflect.go:83 
 [golang 哈希表网文](https://draveness.me/golang/docs/part2-foundation/ch03-datastructure/golang-hashmap/)  
 
-```
+```go
 // bmap makes the map bucket type given the type of the map.
 func bmap(t *types.Type) *types.Type {
 	if t.MapType().Bucket != nil {
@@ -119,7 +119,7 @@ func bmap(t *types.Type) *types.Type {
 
 
   
-```
+```go
 type bmap struct {
     topbits  [8]uint8
     keys     [8]keytype
@@ -131,7 +131,7 @@ type bmap struct {
 bmap 就是我们常说的“桶”，桶里面会最多装 8 个 key，这些 key 之所以会落入同一个桶，是因为它们经过哈希计算后，哈希结果是“一类”的。在桶内，又会根据 key 计算出来的 hash 值的高 8 位来决定 key 到底落入桶内的哪个位置（一个桶内最多有8个位置）。  
 
 [断点调试map的编译过程](https://github.com/ymm135/golang-cookbook/blob/master/md/base/source/debug.md) ，首先看下调用栈:  
-```
+```shell
 cmd_local/compile/internal/gc.bmap at reflect.go:90
 cmd_local/compile/internal/gc.hmap at reflect.go:199
 cmd_local/compile/internal/gc.walkexpr at walk.go:1207
@@ -159,7 +159,7 @@ runtime.rt0_go at asm_amd64.s:226
 中间代码生成阶段会在 `cmd/compile/internal/gc.walkexpr` 函数中将这些 `OMAKEMAP` 操作转换成如下的代码：
 
 - 第一种map创建方式
-```
+```go
 // Call runtime.makehmap to allocate an
 // hmap on the heap and initialize hmap's hash0 field.
 fn := syslook("makemap_small")
@@ -168,7 +168,7 @@ n = mkcall1(fn, n.Type, init)
 ```
  
 - 第二种map创建方式
-```
+```go
 // var h *hmap
 var h *Node
 
@@ -211,13 +211,13 @@ init.Append(nif)
 
 **从以上代码可以看出，`make(map[string]interface{})`被解析成多条语句**  
 - 第一种map创建方式
-```
+```go
 // make(map[string]interface{})
 func makemap_small() (hmap map[any]any)
 ```
 
 - 第二种map创建方式
-```
+```go
 // make(map[string]interface{})
 var h *hmap
 var hv hmap
@@ -276,7 +276,7 @@ overflow := makefield("overflow", otyp)
 ```
 
 结构体为:
-```
+```go
 // (64-bit, 8 byte keys and elems)
 //	maxKeySize  = 128
 //	maxElemSize = 128
@@ -289,7 +289,7 @@ type bmap struct {
 ```
 
 与`compile/internal/gc/reflect.go`中描述的一样
-```
+```go
 // A bucket for a Go map.
 type bmap struct {
 	// tophash generally contains the top byte of the hash value

@@ -4,21 +4,24 @@
 
 ## 数据结构
 ### [内建容器简介](https://github.com/ymm135/go-coding/blob/main/docs/3_%E5%86%85%E5%BB%BA%E5%AE%B9%E5%99%A8.md)  
-### [array/slice](https://github.com/ymm135/TD4-4BIT-CPU/blob/master/go-asm.md#go%E6%B1%87%E7%BC%96%E6%8C%87%E4%BB%A4%E5%AD%A6%E4%B9%A0)  
+### [array/slice](code/base/array/array-slice.md)  
 ### [map](./md/base/map/map.md)
-### [字符串](./md/base/string/string.md) 
+### [字符串](./md/base/string/string.md)  
+### [结构体]()    
+### [指针]()  
 
 ## 常用关键字  
-### defer数据结构及实现  
-### panic 和 recover 实现
-### make 和 new 差异 
+### [defer数据结构及实现](md/base/keyword/defer.md)    
+### [panic和recover实现](md/base/keyword/panic-and-recover.md)  
+### [make和new差异](md/base/keyword/make-vs-new.md)   
 
 ## 并发编程
 ### channel基础知识
 ### channel数据结构及实现方式
 
 ## 反射
-### [反射基础介绍](https://github.com/ymm135/go-coding/blob/main/lang/reflect/README.md)
+### [反射基础介绍](https://github.com/ymm135/go-coding/blob/main/lang/reflect/README.md)  
+### [静态代理]()
 
 ## [go编译器和链接器](https://github.com/ymm135/go-build)  
 ## [cgo调用c/c++](https://github.com/ymm135/go-coding/blob/main/lang/c_cpp/README.md)     

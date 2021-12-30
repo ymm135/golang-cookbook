@@ -1,7 +1,7 @@
 # mongo基础  
 ## docker安装  
 
-```
+```shell
 docker pull mongo:4.0.26-xenial
 
 # 不用加 --auth
@@ -39,7 +39,7 @@ studio-3t.png
 
 ## mongo指令
 
-```
+```shell
 ## 基本指令  
 mongo     进入mongodb命令行
 show dbs;    显示数据库列表

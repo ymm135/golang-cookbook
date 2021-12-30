@@ -2,7 +2,7 @@
 ## 通过反射解析query参数
 ### shouldBindQuery源码
 比如需要解析query参数，填充的结构体为:  
-```
+```go
 // 周报搜索结构体
 type WtReportsSearch struct {
 	CurrUserId uint   `form:"currUserId"`
@@ -15,7 +15,7 @@ type WtReportsSearch struct {
 ```
 
 gin解析代码和请求参数:  
-```
+```go
 // url参数: userId=1&content=工作&startTime=2021-11-04 01:11:07&endTime=2021-11-04 03:11:08
 func (wtReportsApi *WtReportsApi) GetWtReportsList(c *gin.Context) {
 	var searchInfo wtReq.WtReportsSearch
@@ -25,7 +25,7 @@ func (wtReportsApi *WtReportsApi) GetWtReportsList(c *gin.Context) {
 ```
 
 ShouldBindQuery方法，传入实现: **binding.Query**    
-```
+```go
 // gin@v1.7.4/context.go
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
 func (c *Context) ShouldBindQuery(obj interface{}) error {
@@ -68,7 +68,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 ```
 
 ## 自己动手写的demo
-```
+```go
 package main
 
 import (
@@ -163,7 +163,7 @@ func main() {
 ## reflect.New实现动态代理
 
 首先展示通过方法传入接口依赖 [code](../../../code/reflect/proxy/main.go) :  
-```
+```go
 package main
 
 import "fmt"

@@ -3,7 +3,7 @@
 
 ## 字符串声明
 两种方式:**双引号**和**反引号**  
-```
+```go
 str1 := "this is a string"
 str2 := `this is another
 string`
@@ -16,7 +16,7 @@ json := `{"author": "draven", "tags": ["golang"]}`
 ## 数据结构  
 源码在`go1.16.9/src/reflect/value.go`  
 
-```
+```go
 // StringHeader is the runtime representation of a string.
 // It cannot be used safely or portably and its representation may
 // change in a later release.
@@ -29,7 +29,7 @@ type StringHeader struct {
 }
 ```  
 与切片的结构体相比，字符串只少了一个表示容量的 Cap 字段，而正是因为切片在 Go 语言的运行时表示与字符串高度相似，所以我们经常会说字符串是一个只读的切片类型。  
-```
+```go
 type SliceHeader struct {
 	Data uintptr
 	Len  int
@@ -40,7 +40,7 @@ type SliceHeader struct {
 
 ## 字符串内容可修改  
 
-```
+```go
 import "fmt"
 
 func main() {
@@ -57,13 +57,13 @@ func modifyString(s string) string {
 ```
 
 输出结果:  
-```
+```shell
 source( 0xc000010240 ): HelloWorld! ,midify( 0xc000010240 ): MelloWorld!
 ```
 
 ## 字符串赋值  
 string-equal.go  
-```
+```go
 func main() {
 	s1 := "Hello World"
 	s2 := s1
@@ -77,7 +77,7 @@ func main() {
 使用dlv编译器查看字符串的内存结构，正好验证这个问题吧  
 
 `dlv debug string-equal.go`  
-```
+```shell
 ▶ dlv debug string-equal.go 
 Type 'help' for list of commands.
 (dlv) b string-equal.go:8
@@ -122,7 +122,7 @@ Breakpoint 1 set at 0x10cbaf2 for main.main() ./string-equal.go:8
 ```
 
 `s1`重新赋值 
-```
+```shell
 (dlv) n
 > main.main() ./string-equal.go:9 (PC: 0x10cbb07)
      4:	
@@ -161,7 +161,7 @@ Go 语言拼接字符串会使用 `+` 符号，编译器会将该符号对应的
 随后在 `cmd/compile/internal/gc.walkexpr` 中调用 `cmd/compile/internal/gc.addstr` 
 函数生成用于拼接字符串的代码： 
 
-```
+```go
 func walkexpr(n *Node, init *Nodes) *Node {
 	switch n.Op {
 	...
@@ -177,7 +177,7 @@ func walkexpr(n *Node, init *Nodes) *Node {
 - 如果小于或者等于 5 个，那么会调用 concatstring{2,3,4,5} 等一系列函数；
 - 如果超过 5 个，那么会选择 runtime.concatstrings 传入一个数组切片；
 
-```
+```go
 func addstr(n *Node, init *Nodes) *Node { 
     ...
     var fn string // concatstring2
@@ -230,7 +230,7 @@ func concatstring5(buf *tmpBuf, a [5]string) string {
 ```  
 
 `src/runtime/string.go`中`concatstrings`实现  
-```
+```go
 // concatstrings implements a Go string concatenation x+y+z+...
 // The operands are passed in the slice a.
 // If buf != nil, the compiler has determined that the result does not
@@ -281,14 +281,14 @@ func concatstrings(buf *tmpBuf, a []string) string {
 
 ## 类型转换(参考Go 语言设计与实现)  
 类型转换相应实现都在`go/src/runtime/string.go`中:  
-```
-slicebytetostring
+```go
+// slicebytetostring
 func stringtoslicebyte(buf *tmpBuf, s string) []byte {
 func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 ``` 
 
 测试代码  
-```
+```go
 package main
 
 import "fmt"
@@ -308,7 +308,7 @@ func modifyString(s string) string {
 
 使用IDEA调试时，很多状态不对，使用`dlv`试试  
 
-```
+```shell
 > runtime.stringtoslicebyte() /usr/local/go/src/runtime/string.go:167 (PC: 0x10554a1)
 Warning: debugging optimized function
    162:		return
@@ -335,7 +335,7 @@ Warning: debugging optimized function
 也是一样，`s string`参数没有值，`buf`不为空需要初始化，初始化为`[]byte`, 
 最终调用`copy(b, s)`是汇编指令的实现:  
 
-```
+```shell
 > runtime.memmove() /usr/local/go/src/runtime/memmove_amd64.s:36 (PC: 0x106f840)
 Warning: debugging optimized function
     31:	// See memmove Go doc for important implementation constraints.

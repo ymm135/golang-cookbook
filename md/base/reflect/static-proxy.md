@@ -1,3 +1,7 @@
+# 静态代理
+[静态代理代码](../../../code/reflect/proxy/main.go)  
+
+```go
 package main
 
 import "fmt"
@@ -39,3 +43,13 @@ func main() {
 
 	return
 }
+```  
+
+> 疑问: 为什么需要实现类的地址?(&man)以及`manImpl = &man`的原理是啥?  
+
+这里应该是编译器的解析规则，比如接口包含实现类的指针，我猜`manImpl = &man`语句就是把man结构实现的地址
+赋给`IMan`的指针  
+
+
+
+

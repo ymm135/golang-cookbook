@@ -4,7 +4,7 @@
 go源码下载地址`https://go.dev/dl/go1.16.9.src.tar.gz`, 放到到路径为`/Users/zero/go/sdk/source`，go源码路径为`/Users/zero/go/sdk/source1.16.9/go`  
 
 从官网下载源码，修改源码，比如`source1.16.9/go/src/fmt/print.go`下`Println`函数    
-```
+```go
 func Println(a ...interface{}) (n int, err error) {
 	println("_xiao_")
 	return Fprintln(os.Stdout, a...)
@@ -12,7 +12,7 @@ func Println(a ...interface{}) (n int, err error) {
 ```
 
 进入源码src目录，执行`./make.bash` 或者 `./all.bash`   
-```
+```shell
 Building Go cmd/dist using /Users/zero/go/sdk/go1.16.9. (go1.16.9 darwin/amd64)
 Building Go toolchain1 using /Users/zero/go/sdk/go1.16.9.
 Building Go bootstrap cmd/go (go_bootstrap) using Go toolchain1.
@@ -26,7 +26,7 @@ Installed commands in /Users/zero/Downloads/go/bin
 
 把当前的GOROOT切换为编译好的路径: `export GOROOT=/Users/zero/go/sdk/source1.16.9/go`
 
-```
+```go
 package main
 
 import "fmt"
@@ -36,7 +36,7 @@ func main() {
 }
 ```
 `go run main.go` 或者 `$GOPATH/src/github.com/golang/go/bin/go run main.go` 
-```
+```shell
 _xiao_
 Hello World
 ```  
@@ -46,7 +46,7 @@ Hello World
 
 在源码处增加map类型打印`fmt.Println("_bmap_", t)`:  
 
-```
+```go
 // bmap makes the map bucket type given the type of the map.
 func bmap(t *types.Type) *types.Type {
 
@@ -57,7 +57,7 @@ func bmap(t *types.Type) *types.Type {
 ...
 ```
 demo文件:  
-```
+```go
 package main
 
 import "fmt"
@@ -106,7 +106,7 @@ packagefile internal/fmtsort=/Users/zero/go/sdk/test/pkg/darwin_amd64/internal/f
 
 源码pkg编译后文件列表: 
 
-```
+```shell
 └── pkg
     ├── darwin_amd64  #darwin_amd64 平台静态库 current ar archive 
     │   ├── cmd
@@ -171,7 +171,7 @@ packagefile internal/fmtsort=/Users/zero/go/sdk/test/pkg/darwin_amd64/internal/f
 ```
 
 其中.a的是go编译过程中的静态库，可以查看静态库的内容:  
-```
+```shell
 $ ar -v -t pkg/darwin_amd64/fmt.a 
 rw-r--r--       0/0         11894 Jan  1 08:00 1970 __.PKGDEF
 rw-r--r--       0/0        754130 Jan  1 08:00 1970 _go_.o 
@@ -201,7 +201,7 @@ Go 语言的**编译器**入口在 `src/cmd/compile/internal/gc/main.go` 文件�
 该函数会先获取命令行传入的参数并更新编译选项和配置，随后会调用 `cmd/compile/internal/gc.parseFiles` 
 对输入的文件进行词法与语法分析得到对应的抽象语法树：
 
-```
+```go
 func Main(archInit func(*Arch)) {
 	...
 
@@ -209,12 +209,12 @@ func Main(archInit func(*Arch)) {
 ``` 
 
 可以使用pkg/tool/compile的可执行文件编译指定文件
-```
+```shell
 ./compile ~/Downloads/map.go
 ```
 
 如果把src/cmd在idea中打开，调试compile源码:
-```
+```shell
 # 包导入的有问题
 use of internal package cmd/compile/internal/amd64 not allowed
 ```
@@ -224,13 +224,13 @@ use of internal package cmd/compile/internal/amd64 not allowed
 复制一份，修改为`internal.local`,导入这个包  
 
 问题是使用的不是GOROOT/src下的internal,而是vendor中的依赖库
-```
+```shell
 ../internal/dwarf/dwarf.go:15:2: cannot find package "." in:
 	/Users/zero/work/mygithub/go/src/cmd_local/vendor/internal_local/execabs
 ```
  
 然后把文件夹放到vendor下
-```
+```shell
 drwxr-xr-x   4 zero  staff   128 Nov 23 15:31 github.com
 drwxr-xr-x   3 zero  staff    96 Nov 23 15:31 golang.org
 drwxr-xr-x  28 zero  staff   896 Nov 23 15:01 internal_local

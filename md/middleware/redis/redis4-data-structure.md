@@ -1,11 +1,11 @@
 # redis4.0 数据结构
 下载源码  
-```
+```shell
 git clone https://github.com/redis/redis -b 4.0  
 ```
 
 具体模块可以查看src/Makefile
-```
+```shell
 比如调试redis-server
 REDIS_SERVER_NAME=redis-server  
 
@@ -19,7 +19,7 @@ server `main()`方法在`src/server.c`中，首先编译源码`make -j4`,然后�
 ![CLion 2021.3通过makefile调试redis](../../../res/clion-redis-makefile.png)  
 
 ## hash
-```
+```shell
 127.0.0.1:6379> HMSET myhash field1 "Hello" field2 "World"
 OK
 (351.50s)
@@ -66,13 +66,13 @@ hash-max-ziplist-value 64   # value超过多少字节之后使用hashtable
 ```  
 
 修改为
-```
+```shell
 hash-max-ziplist-entries 512 
 hash-max-ziplist-value 1  
 ``` 
 
 启动时增加redis.conf配置，只要存储的value大于一个字节，就会启用hashtable存储 
-```
+```shell
 /Users/xxx/work/github/redis/src/redis-server /Users/xxx/work/github/redis/redis.conf
 14496:C 15 Dec 11:37:10.798 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
 14496:C 15 Dec 11:37:10.798 # Redis version=4.0.14, bits=64, commit=ff6db5f1, modified=1, pid=14496, just started
@@ -82,7 +82,7 @@ hash-max-ziplist-value 1
 存储指令:`127.0.0.1:6379> HMSET myhash field1 "Hello"`  
 
 首选会判断存储类型是ziplist还是ht?
-```
+```js
 void hashTypeConvertZiplist(robj *o, int enc) {
     serverAssert(o->encoding == OBJ_ENCODING_ZIPLIST);
 
@@ -145,7 +145,7 @@ typedef struct dictEntry {
 > As per Redis 4.0.0, HMSET is considered deprecated. Please use HSET in new code.  
 > 根据Redis 4.0.0，HMSET被视为已弃用。请在新代码中使用HSET。
 
-```
+```shell
 $ HMSET myhash field1 "Hello"
 $ HMSET myhash field2 "Hello123"
 
@@ -178,14 +178,14 @@ result = {dictht}
 ``` 
 
 如果一直使用一个`key`，那么所有的数据都会使用链表存储，只有使用不同的`key`才会涉及到hash表  
-```
+```shell
 # 相当于关系型数据库中用户表的两条记录
 hmset user:1 name tom age 23 city beijing
 hmset user:2 name tim age 18 city beijing
 ```  
 
 比如执行一下命令，查看hash函数及如何存储  
-```
+```shell
  hmset user:2 name tom age 23 city beijing
 ```
 

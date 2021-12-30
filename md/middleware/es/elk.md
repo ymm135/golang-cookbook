@@ -21,7 +21,7 @@ sudo apt-get update && sudo apt-get install logstash
 
 [原文](https://www.elastic.co/guide/en/logstash/6.8/plugins-inputs-jdbc.html)  
 
-```
+```shell
 input {
   jdbc {
     jdbc_driver_library => "mysql-connector-java-5.1.36-bin.jar"
@@ -37,12 +37,11 @@ input {
 
 
 输入日志文件，转发到`http rest` api接口  
-```
+```shell
 input {
     jdbc {
       # mysql jdbc connection string to our backup databse
-
-jdbc_connection_string => "jdbc:mysql://ip:port/database?zeroDateTimeBehavior=convertToNull"
+      jdbc_connection_string => "jdbc:mysql://ip:port/database?zeroDateTimeBehavior=convertToNull"
 
       # the user we wish to excute our statement as
       jdbc_user => "xxxx"

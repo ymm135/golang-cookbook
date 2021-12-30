@@ -6,14 +6,14 @@
 ## docker install  
 [镜像文档](https://hub.docker.com/_/postgres)  
 
-```
+```shell
 docker run -d -p 5432:5432 --name postgres -e POSTGRES_PASSWORD=root  postgres:11.12   
 ```
 
 > 默认数据库postgres, 默认用户postgres, 默认端口5432  
 
 docker-compose.yml 示例
-```
+```yaml
 # Use postgres/example user/password credentials
 version: '3.1'
 
@@ -55,7 +55,7 @@ services:
 ## 常用指令  
 
 命令行进入:  
-```
+```shell
 $ psql mydb
 
 psql (11.14)
@@ -70,7 +70,7 @@ mydb=> SELECT version();
 (1 row)
 ```
 
-```
+```shell
 \h：查看SQL命令的解释，比如\h select。
 ?：查看psql命令列表。
 \l：列出所有数据库。
