@@ -306,7 +306,7 @@ type bmap struct {
 > // Followed by bucketCnt keys and then bucketCnt elems.  
 > // Followed by an overflow pointer.   
 
-
+![go-map-ds](../../../res/go-map-ds.jpg)    
   
 ## Hash函数
 

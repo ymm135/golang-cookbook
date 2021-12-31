@@ -51,8 +51,12 @@ func main() {
 go mod init gotest  
 go mod tidy  
 
-go build // 生成gotest二进制文件  
-```
+go build -gcflags "-N -l // 生成gotest二进制文件  
+``` 
+
+> -gcflags "-N -l"   
+> -N    disable optimizations
+> -l    disable inlining 
 
 vscode调试配置
 不能使用golang的配置
