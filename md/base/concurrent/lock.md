@@ -54,7 +54,7 @@ type Mutex struct {
 ``` 
 
 #### 互斥锁的状态  
-```
+```go
 const (
 	mutexLocked = 1 << iota // mutex is locked
 	mutexWoken
@@ -149,7 +149,7 @@ func (m *Mutex) lockSlow() {
   - 处于正常模式， 如果没有等待释放的锁或已经被唤醒的协程，直接返回；其他情况通过`runtime_Semrelease`唤醒协程。
   - 处于饥饿模式，将锁所有权会交给队列的下个等待着，等待着会负责设置`mutexLocked`标志位。
   
-```
+```go
 // Unlock unlocks m.
 // It is a run-time error if m is not locked on entry to Unlock.
 //
@@ -199,7 +199,7 @@ func (m *Mutex) unlockSlow(new int32) {
 ### 读写锁(sync.RWMutex)
 读写互斥锁 `sync.RWMutex` 是细粒度的互斥锁，它不限制资源的并发读，但是`读写、写写`操作无法并行执行。
 
-```
+```go
 // There is a modified copy of this file in runtime/rwmutex.go.
 // If you make any changes here, see if you should make them there.
 
@@ -251,7 +251,7 @@ RLock
 现在假设先读后写的流程:  
 
 读锁的实现是把`readerCount`自增，调用一次，增加一个，如果有未释放的写锁，那就等待写锁释放后启动。(通过信号量`readerSem`)
-```
+```go
 func (rw *RWMutex) RLock() {
 	if race.Enabled {
 		_ = rw.w.state
@@ -270,7 +270,7 @@ func (rw *RWMutex) RLock() {
 下面查看`Lock`的实现:  
 大概逻辑为先对写锁进行加锁，如果写锁已经占用，`rw.w.Lock()`就会阻塞。如果没有写锁，再去判断读锁的数量，如果读锁的数量不为0，
 那就一直等待，直到读锁完全释放。(通过信号量`writerSem`实现)  
-```
+```go
 // Lock locks rw for writing.
 // If the lock is already locked for reading or writing,
 // Lock blocks until the lock is available.
