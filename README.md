@@ -19,7 +19,7 @@
 
 ## 并发编程
 ### [goroutine数据结构](md/base/concurrent/goroutine.md)  
-### [channel实现](md/base/concurrent/channel.md)  
+### [channel实现](md/base/concurrent/channel.md)
 
 ## 反射
 ### [反射基础介绍](https://github.com/ymm135/go-coding/blob/main/lang/reflect/README.md)  
