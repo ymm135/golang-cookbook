@@ -1,5 +1,20 @@
 # goroutine 
 ## 测试代码
+```go
+func main() {
+	for i := 0; i < 10; i++ {
+		tag := i
+
+		go func() {
+			for {
+				fmt.Println("goroutine:", tag)
+				time.Sleep(time.Microsecond * 100)
+			}
+		}()
+	}
+	time.Sleep(time.Minute)
+}
+```
 
 ## 数据结构 
 源码文件`go/src/runtime/runtime2.go`  
@@ -148,7 +163,7 @@ gp = {*runtime.g | 0xc000082480}
 
 ### 多个协程是否在一个线程中呢? 由调度器决定 
 手动开启10个协程，查看协程数
-```
+```go
 package main
 
 import (
@@ -210,6 +225,7 @@ goroutine: 1
 ```
 
 `idea`占用的线程数也不固定:
+> `#TH`表示线程，总线程数/活跃线程数，75/5 表示总线程数是75，活跃线程数是5.
 ```
 PID    COMMAND      %CPU  TIME     #TH   #WQ  #PORT MEM    PURG   CMPRS  PGRP  PPID  STATE    BOOSTS 
 19219  idea         126.6 32:44.40 75/5  2    568   3580M+ 1536K  229M-  19219 1     running  *0[782]
@@ -422,7 +438,7 @@ type schedt struct {
 
 ### GMP 调试
 1. `go tool trace`
-```
+```go
 package main
 
 import (
@@ -521,7 +537,7 @@ Hello Go
 - `runqueue`=0： Scheduler 全局队列中 G 的数量；
 - `[0 0 0 0]`: 分别为 4 个 P 的 local queue 中的 G 的数量。  
 
-### GMP之前的关系  
+### GMP之间的关系  
 
 ![GMP-model](../../../res/GMP-model.jpg)  
 
