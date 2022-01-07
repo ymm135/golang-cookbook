@@ -302,7 +302,7 @@ func (rw *RWMutex) Lock() {
 
 ### 集体等待`sync.WaitGroup`
 [测试代码](../../../code/base/concurrent/lock/waitgroup/base-waitgroup.go)  等待所有协程运行结束后再退出  
-```
+```go
 func main() {
 	group := sync.WaitGroup{}
 	num := 5
@@ -345,7 +345,7 @@ type WaitGroup struct {
 从官网注释中可以看出`state1`存储这状态及信号量`statep, semap`，等待及唤醒功能通过`信号量`实现的 
 
 `Wait()`代码实现，主要语句是`runtime_Semacquire(semap)`  
-```
+```go
 // Wait blocks until the WaitGroup counter is zero.
 func (wg *WaitGroup) Wait() {
 	statep, semap := wg.state()
@@ -372,7 +372,7 @@ func (wg *WaitGroup) Wait() {
 
 ### 一次就好`sync.Once`
 
-```
+```go
 // Once is an object that will perform exactly one action.
 //
 // A Once must not be copied after first use.
@@ -388,7 +388,7 @@ type Once struct {
 ```
 
 测试demo
-```
+```go
 func main() {
 	once := sync.Once{}
 	for i := 0; i < 10; i++ {
@@ -427,7 +427,7 @@ func (o *Once) doSlow(f func()) {
 ### 条件变量`sync.Cond` 
 
 测试代码
-```
+```go
 var status int64
 
 func main() {
@@ -461,7 +461,7 @@ func listen(c *sync.Cond) {
 ```
 
 输出结果:  
-```
+```shell
 listen
 listen
 listen
@@ -475,7 +475,7 @@ listen
 ```
 
 数据结构: 
-```
+```go
 // Cond implements a condition variable, a rendezvous point
 // for goroutines waiting for or announcing the occurrence
 // of an event.
@@ -496,7 +496,7 @@ type Cond struct {
 }
 ```
 方法及使用说明，源码注释写的很详细
-```
+```go
 // Wait atomically unlocks c.L and suspends execution
 // of the calling goroutine. After later resuming execution,
 // Wait locks c.L before returning. Unlike in other systems,
@@ -523,8 +523,7 @@ func (c *Cond) Wait() {
 ```
 
 单个唤醒和全部唤醒:  
-```
-
+```go
 // Signal wakes one goroutine waiting on c, if there is any.
 //
 // It is allowed but not required for the caller to hold c.L
@@ -555,7 +554,7 @@ func (c *Cond) Broadcast() {
 ### 信号量 
 
 源码路径:`go/src/sync/runtime.go`中的操作方法
-```
+```go
 // Semacquire waits until *s > 0 and then atomically decrements it.
 // It is intended as a simple sleep primitive for use by the synchronization
 // library and should not be used directly.
@@ -563,7 +562,7 @@ func runtime_Semacquire(s *uint32)
 ```
 
 具体实现`go/src/runtime/sema.go`  
-```
+```go
 //go:linkname sync_runtime_Semacquire sync.runtime_Semacquire
 func sync_runtime_Semacquire(addr *uint32) {
 	semacquire1(addr, false, semaBlockProfile, 0)
@@ -575,7 +574,7 @@ func poll_runtime_Semacquire(addr *uint32) {
 }
 ``` 
 `semacquire1`方法实现: 
-```
+```go
 func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes int) {
 	gp := getg()
 	if gp != gp.m.curg {
@@ -635,7 +634,7 @@ func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes i
 ```
 
 通过信号量实现休眠的函数为`goparkunlock`唤醒的函数为`goready`  
-```
+```go
 // Puts the current goroutine into a waiting state and unlocks the lock.
 // The goroutine can be made runnable again by calling goready(gp).
 func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
