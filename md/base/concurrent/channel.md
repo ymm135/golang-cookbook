@@ -132,6 +132,14 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
     gp.waiting = mysg
     gp.param = nil
     c.sendq.enqueue(mysg)
+    // Signal to anyone trying to shrink our stack that we're about
+    // to park on a channel. The window between when this G's status
+    // changes and when we set gp.activeStackChans is not safe for
+    // stack shrinking.
+    atomic.Store8(&gp.parkingOnChan, 1)
+	// 阻塞goroutine
+    gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2) 
+	
 }
 ```  
 如果`recvq`队列中有等待接收的`Goroutine`, 会直接发送`Goroutine`的`elem unsafe.Pointer // data element (may point to stack)` 中  
@@ -177,7 +185,18 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 			// copy data from sender
 			recvDirect(c.elemtype, sg, ep)
 		}
-	} else {}
+	} else {
+		...
+    }
+	
+    unlockf()
+    gp.param = unsafe.Pointer(sg)
+    sg.success = true
+    if sg.releasetime != 0 {
+        sg.releasetime = cputicks()
+    }
+	// 唤醒
+    goready(gp, skip+1)
 }
 //直接把dequeue的数据赋值被接收的变量  
 func recvDirect(t *_type, sg *sudog, dst unsafe.Pointer) {

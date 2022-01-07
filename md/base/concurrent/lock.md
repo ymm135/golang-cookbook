@@ -300,6 +300,369 @@ func (rw *RWMutex) Lock() {
 
 > 写锁与写锁之间通过`Mutex`实现，读写锁之间通过`信号量`实现。  
 
+### 集体等待`sync.WaitGroup`
+[测试代码](../../../code/base/concurrent/lock/waitgroup/base-waitgroup.go)  等待所有协程运行结束后再退出  
+```
+func main() {
+	group := sync.WaitGroup{}
+	num := 5
+	group.Add(num)
+
+	for i := 0; i < num; i++ {
+		index := i
+		go func() {
+			fmt.Println("run goroutine ", index)
+			group.Done()
+		}()
+	}
+	
+	group.Wait()
+}
+```
+
+#### 数据结构及实现
+源码路径``
+```go
+// A WaitGroup waits for a collection of goroutines to finish.
+// The main goroutine calls Add to set the number of
+// goroutines to wait for. Then each of the goroutines
+// runs and calls Done when finished. At the same time,
+// Wait can be used to block until all goroutines have finished.
+//
+// A WaitGroup must not be copied after first use.
+type WaitGroup struct {
+	noCopy noCopy // 保证不会被开发者通过再赋值的方式拷贝
+
+	// 64-bit value: high 32 bits are counter, low 32 bits are waiter count.
+	// 64-bit atomic operations require 64-bit alignment, but 32-bit
+	// compilers do not ensure it. So we allocate 12 bytes and then use
+	// the aligned 8 bytes in them as state, and the other 4 as storage
+	// for the sema.
+	state1 [3]uint32
+}
+``` 
+
+从官网注释中可以看出`state1`存储这状态及信号量`statep, semap`，等待及唤醒功能通过`信号量`实现的 
+
+`Wait()`代码实现，主要语句是`runtime_Semacquire(semap)`  
+```
+// Wait blocks until the WaitGroup counter is zero.
+func (wg *WaitGroup) Wait() {
+	statep, semap := wg.state()
+
+	for {
+		state := atomic.LoadUint64(statep)
+		v := int32(state >> 32)
+		w := uint32(state)
+
+		// Increment waiters count.
+		if atomic.CompareAndSwapUint64(statep, state, state+1) {
+
+			runtime_Semacquire(semap)
+			if *statep != 0 {
+				panic("sync: WaitGroup is reused before previous Wait has returned")
+			}
+
+			return
+		}
+	}
+}
+```
+
+
+### 一次就好`sync.Once`
+
+```
+// Once is an object that will perform exactly one action.
+//
+// A Once must not be copied after first use.
+type Once struct {
+	// done indicates whether the action has been performed.
+	// It is first in the struct because it is used in the hot path.
+	// The hot path is inlined at every call site.
+	// Placing done first allows more compact instructions on some architectures (amd64/386),
+	// and fewer instructions (to calculate offset) on other architectures.
+	done uint32
+	m    Mutex
+}
+```
+
+测试demo
+```
+func main() {
+	once := sync.Once{}
+	for i := 0; i < 10; i++ {
+		once.Do(func() {
+			fmt.Println("once run ")
+		})
+	}
+}
+```
+运行结果: 
+```shell
+once run  
+```
+
+`once.Do`源码分析  
+实现方式是通过`m    Mutex`互斥锁防止多线程运行，通过状态`done uint32`保存是否运行标记。  
+```go
+func (o *Once) Do(f func()) {
+	if atomic.LoadUint32(&o.done) == 0 {
+		// Outlined slow-path to allow inlining of the fast-path.
+		o.doSlow(f)
+	}
+}
+
+func (o *Once) doSlow(f func()) {
+	o.m.Lock()
+	defer o.m.Unlock()
+	if o.done == 0 {
+		defer atomic.StoreUint32(&o.done, 1)
+		f()
+	}
+}
+```
+
+
+### 条件变量`sync.Cond` 
+
+测试代码
+```
+var status int64
+
+func main() {
+	c := sync.NewCond(&sync.Mutex{})
+	for i := 0; i < 10; i++ {
+		go listen(c)
+	}
+	time.Sleep(1 * time.Second)
+	go broadcast(c)
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+	<-ch
+}
+
+func broadcast(c *sync.Cond) {
+	c.L.Lock()
+	atomic.StoreInt64(&status, 1)
+	c.Broadcast()
+	c.L.Unlock()
+}
+
+func listen(c *sync.Cond) {
+	c.L.Lock()
+	for atomic.LoadInt64(&status) != 1 {
+		c.Wait()
+	}
+	fmt.Println("listen")
+	c.L.Unlock()
+}
+```
+
+输出结果:  
+```
+listen
+listen
+listen
+listen
+listen
+listen
+listen
+listen
+listen
+listen
+```
+
+数据结构: 
+```
+// Cond implements a condition variable, a rendezvous point
+// for goroutines waiting for or announcing the occurrence
+// of an event.
+//
+// Each Cond has an associated Locker L (often a *Mutex or *RWMutex),
+// which must be held when changing the condition and
+// when calling the Wait method.
+//
+// A Cond must not be copied after first use.
+type Cond struct {
+	noCopy noCopy
+
+	// L is held while observing or changing the condition
+	L Locker
+
+	notify  notifyList
+	checker copyChecker
+}
+```
+方法及使用说明，源码注释写的很详细
+```
+// Wait atomically unlocks c.L and suspends execution
+// of the calling goroutine. After later resuming execution,
+// Wait locks c.L before returning. Unlike in other systems,
+// Wait cannot return unless awoken by Broadcast or Signal.
+//
+// Because c.L is not locked when Wait first resumes, the caller
+// typically cannot assume that the condition is true when
+// Wait returns. Instead, the caller should Wait in a loop:
+//
+//    c.L.Lock()
+//    for !condition() {
+//        c.Wait()
+//    }
+//    ... make use of condition ...
+//    c.L.Unlock()
+//
+func (c *Cond) Wait() {
+	c.checker.check()
+	t := runtime_notifyListAdd(&c.notify)
+	c.L.Unlock()
+	runtime_notifyListWait(&c.notify, t)
+	c.L.Lock()
+}
+```
+
+单个唤醒和全部唤醒:  
+```
+
+// Signal wakes one goroutine waiting on c, if there is any.
+//
+// It is allowed but not required for the caller to hold c.L
+// during the call.
+func (c *Cond) Signal() {
+	c.checker.check()
+	runtime_notifyListNotifyOne(&c.notify)
+}
+
+// Broadcast wakes all goroutines waiting on c.
+//
+// It is allowed but not required for the caller to hold c.L
+// during the call.
+func (c *Cond) Broadcast() {
+	c.checker.check()
+	runtime_notifyListNotifyAll(&c.notify)
+}
+```
+
+从源码实现中可以看出`互斥锁`为了线程安全，等待及唤醒通过`信号量`实现。
+
+`sync.Cond` 不是一个常用的同步机制，但是在条件长时间无法满足时，与使用 `for {}` 进行忙碌等待相比，
+`sync.Cond` 能够让出处理器的使用权，提高 CPU 的利用率。使用时我们也需要注意以下问题：
+- `sync.Cond.Wait` 在调用之前一定要使用获取互斥锁，否则会触发程序崩溃；
+- `sync.Cond.Signal` 唤醒的 Goroutine 都是队列最前面、等待最久的 Goroutine；
+- `sync.Cond.Broadcast` 会按照一定顺序广播通知等待的全部 Goroutine；
+
+### 信号量 
+
+源码路径:`go/src/sync/runtime.go`中的操作方法
+```
+// Semacquire waits until *s > 0 and then atomically decrements it.
+// It is intended as a simple sleep primitive for use by the synchronization
+// library and should not be used directly.
+func runtime_Semacquire(s *uint32)
+```
+
+具体实现`go/src/runtime/sema.go`  
+```
+//go:linkname sync_runtime_Semacquire sync.runtime_Semacquire
+func sync_runtime_Semacquire(addr *uint32) {
+	semacquire1(addr, false, semaBlockProfile, 0)
+}
+
+//go:linkname poll_runtime_Semacquire internal/poll.runtime_Semacquire
+func poll_runtime_Semacquire(addr *uint32) {
+	semacquire1(addr, false, semaBlockProfile, 0)
+}
+``` 
+`semacquire1`方法实现: 
+```
+func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes int) {
+	gp := getg()
+	if gp != gp.m.curg {
+		throw("semacquire not on the G stack")
+	}
+
+	// Easy case.
+	if cansemacquire(addr) {
+		return
+	}
+
+	// Harder case:
+	//	increment waiter count
+	//	try cansemacquire one more time, return if succeeded
+	//	enqueue itself as a waiter
+	//	sleep
+	//	(waiter descriptor is dequeued by signaler)
+	s := acquireSudog()
+	root := semroot(addr)
+	t0 := int64(0)
+	s.releasetime = 0
+	s.acquiretime = 0
+	s.ticket = 0
+	if profile&semaBlockProfile != 0 && blockprofilerate > 0 {
+		t0 = cputicks()
+		s.releasetime = -1
+	}
+	if profile&semaMutexProfile != 0 && mutexprofilerate > 0 {
+		if t0 == 0 {
+			t0 = cputicks()
+		}
+		s.acquiretime = t0
+	}
+	for {
+		lockWithRank(&root.lock, lockRankRoot)
+		// Add ourselves to nwait to disable "easy case" in semrelease.
+		atomic.Xadd(&root.nwait, 1)
+		// Check cansemacquire to avoid missed wakeup.
+		if cansemacquire(addr) {
+			atomic.Xadd(&root.nwait, -1)
+			unlock(&root.lock)
+			break
+		}
+		// Any semrelease after the cansemacquire knows we're waiting
+		// (we set nwait above), so go to sleep.
+		root.queue(addr, s, lifo)
+		goparkunlock(&root.lock, waitReasonSemacquire, traceEvGoBlockSync, 4+skipframes)
+		if s.ticket != 0 || cansemacquire(addr) {
+			break
+		}
+	}
+	if s.releasetime > 0 {
+		blockevent(s.releasetime-t0, 3+skipframes)
+	}
+	releaseSudog(s)
+}
+```
+
+通过信号量实现休眠的函数为`goparkunlock`唤醒的函数为`goready`  
+```
+// Puts the current goroutine into a waiting state and unlocks the lock.
+// The goroutine can be made runnable again by calling goready(gp).
+func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
+	gopark(parkunlock_c, unsafe.Pointer(lock), reason, traceEv, traceskip)
+}
+
+// 唤醒线程
+func goready(gp *g, traceskip int) {
+	systemstack(func() {
+		ready(gp, traceskip, true)
+	})
+}
+```
+
+当没有接收者能够处理数据时，向`channel`的发送数据会被阻塞，用的的就是`goparkunlock`；  
+`channel`数据发送也会用到`goready`,唤醒阻塞的接收者们。  
+
+> 调用 `runtime.goparkunlock` 将当前的 `Goroutine` 陷入沉睡等待唤醒；
+> 调用 `runtime.goready` 将等待接收数据的 `Goroutine` 标记成可运行状态 `Grunnable` 并把该 
+`Goroutine` 放到发送方所在的处理器的 `runnext` 上等待执行，该处理器在下一次调度时会立刻唤醒数据的接收方； 
+
+
+
+
+
+
+
 
 
 
