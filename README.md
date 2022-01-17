@@ -1,6 +1,7 @@
 # Golang基础知识  
 ## [源码调试](./md/base/source/debug.md)  
 ## [从汇编角度理解go](https://github.com/ymm135/TD4-4BIT-CPU/blob/master/go-asm.md) 
+## [go编译器和链接器](https://github.com/ymm135/go-build)  
 
 ## 数据结构
 ### [内建容器简介](https://github.com/ymm135/go-coding/blob/main/docs/3_%E5%86%85%E5%BB%BA%E5%AE%B9%E5%99%A8.md)  
@@ -39,6 +40,7 @@
 ### [gin中间件](./md/web/gin/gin-middleware.md)    
 
 ## gorm  
+### [gorm基础]()
 ### [gorm实现原理]()  
 
 # 中间件
