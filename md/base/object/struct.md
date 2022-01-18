@@ -188,6 +188,8 @@ TEXT main.main(SB) /Users/ymm/work/mygithub/golang-cookbook/code/base/object/str
 
 备注: 如果想要查看结构体调用方法是如何被当做参数传入的，可查看汇编。  
 
+> 也可以参看 [go常用语句对应的汇编指令之函数调用](https://github.com/ymm135/go-build/blob/master/gouse-assembly.md)    
+
 ```
 (dlv) disassemble
 TEXT main.(*Man).Walk(SB) /Users/ymm/work/mygithub/golang-cookbook/code/base/object/struct/base-struct.go

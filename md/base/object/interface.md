@@ -100,6 +100,53 @@ type interfacetype struct {
 └─────────────┘
 ```  
 
+也可以从汇编实现看出结构体赋值给指针`iman = &man`
+```go
+    22:	func main() {
+    23:		var test_interface interface{}
+    24:		man := Man{name: "xiaoming", age: 18}
+    25:		var iman IMan
+    26:
+=>  27:		iman = &man
+    28:		iman.walk()
+    29:		man.walk()
+```
+汇编实现如下:
+```shell
+	base-interface.go:24	0x10cdd7a	488d05df370100			lea rax, ptr [rip+0x137df]
+	base-interface.go:24	0x10cdd81	48890424			mov qword ptr [rsp], rax
+	base-interface.go:24	0x10cdd85	e8d6fff3ff			call $runtime.newobject
+	base-interface.go:24	0x10cdd8a	488b442408			mov rax, qword ptr [rsp+0x8]
+	base-interface.go:24	0x10cdd8f	4889442470			mov qword ptr [rsp+0x70], rax            #[rsp+0x70] 就是变量man的地址
+	base-interface.go:24	0x10cdd94	0f57c0				xorps xmm0, xmm0
+	base-interface.go:24	0x10cdd97	0f118424b8000000		movups xmmword ptr [rsp+0xb8], xmm0
+	base-interface.go:24	0x10cdd9f	48c78424c800000000000000	mov qword ptr [rsp+0xc8], 0x0
+	base-interface.go:24	0x10cddab	488d05385d0200			lea rax, ptr [rip+0x25d38]
+	base-interface.go:24	0x10cddb2	48898424b8000000		mov qword ptr [rsp+0xb8], rax
+	base-interface.go:24	0x10cddba	48c78424c000000008000000	mov qword ptr [rsp+0xc0], 0x8
+	base-interface.go:24	0x10cddc6	48c78424c800000012000000	mov qword ptr [rsp+0xc8], 0x12
+	base-interface.go:24	0x10cddd2	488b7c2470			mov rdi, qword ptr [rsp+0x70]
+	base-interface.go:24	0x10cddd7	48c7470808000000		mov qword ptr [rdi+0x8], 0x8
+	base-interface.go:24	0x10cdddf	48c7471012000000		mov qword ptr [rdi+0x10], 0x12
+	base-interface.go:24	0x10cdde7	833d02760d0000			cmp dword ptr [runtime.writeBarrier], 0x0
+	base-interface.go:24	0x10cddee	7405				jz 0x10cddf5
+	base-interface.go:24	0x10cddf0	e946030000			jmp 0x10ce13b
+	base-interface.go:24	0x10cddf5	488907				mov qword ptr [rdi], rax
+	base-interface.go:24	0x10cddf8	eb00				jmp 0x10cddfa                   
+	base-interface.go:25	0x10cddfa	0f57c0				xorps xmm0, xmm0
+	base-interface.go:25	0x10cddfd	0f11842488000000		movups xmmword ptr [rsp+0x88], xmm0		#[rsp+0x88]是iman变量的地址
+=>	base-interface.go:27	0x10cde05*	488b442470			mov rax, qword ptr [rsp+0x70]			#[rsp+0x70]存储的就是man变量的地址
+	base-interface.go:27	0x10cde0a	4889442448			mov qword ptr [rsp+0x48], rax
+	base-interface.go:27	0x10cde0f	488d0d823c0300			lea rcx, ptr [rip+0x33c82]
+	base-interface.go:27	0x10cde16	48898c2488000000		mov qword ptr [rsp+0x88], rcx            #把`tab  *itab`赋值给iman变量
+	base-interface.go:27	0x10cde1e	4889842490000000		mov qword ptr [rsp+0x90], rax            #就是把man变量的地址赋给iman.data变量，也就是指向结构体的实现  
+	base-interface.go:28	0x10cde26	488b842488000000		mov rax, qword ptr [rsp+0x88]
+```
+
+从汇编实现可以看出接口赋值需要填充两部分，一部分是`tab  *itab`，另一部分是结构体实现`data unsafe.Pointer`部分。  
+
+
+
 
 
 

@@ -72,7 +72,7 @@ type waitq struct {
 
 - `qcount` — Channel 中的元素个数；
 - `dataqsiz` — Channel 中的循环队列的长度；
-- `buf` — Channel 的缓冲区数据指针；
+- `buf` — Channel 的缓冲区数据指针(环形队列数据区)；
 - `sendx` — Channel 的发送操作处理到的位置；
 - `recvx` — Channel 的接收操作处理到的位置；
 

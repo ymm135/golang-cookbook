@@ -1,7 +1,7 @@
 # Golang基础知识  
 ## [源码调试](./md/base/source/debug.md)  
 ## [从汇编角度理解go](https://github.com/ymm135/TD4-4BIT-CPU/blob/master/go-asm.md) 
-## [go编译器和链接器](https://github.com/ymm135/go-build)  
+## [go/c/c++常用功能对应的汇编指令](https://github.com/ymm135/go-build/blob/master/gouse-assembly.md)   
 
 ## 数据结构
 ### [内建容器简介](https://github.com/ymm135/go-coding/blob/main/docs/3_%E5%86%85%E5%BB%BA%E5%AE%B9%E5%99%A8.md)  
