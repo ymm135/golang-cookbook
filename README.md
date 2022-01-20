@@ -71,4 +71,11 @@
 ## pgsql
 ### [pgsql基础](md/middleware/pgsql/pgsql-base.md)  
 
-## [gRPC实现原理](https://github.com/ymm135/go-coding/blob/main/lang/rpc/grpc/README.md)   
+## [gRPC实现原理](https://github.com/ymm135/go-coding/blob/main/lang/rpc/grpc/README.md)
+
+
+## c/c++/go对比 
+### [c基础](md/c-cpp-golang/base-c.md)  
+### [c++基础](md/c-cpp-golang/base-c++.md)  
+### [c/c++/go对比](md/c-cpp-golang/c-c++-golang.md)  
+
