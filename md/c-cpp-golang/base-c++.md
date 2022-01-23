@@ -51,6 +51,7 @@ int main() {
 ```
 通过clion内存视图看到`NUMBER1`的内存为`01 00 00 00`，占用4个字节的变量。通过gdb窗口`disass /m`查看汇编  
 > 通过`~/.gdbinit`设置汇编格式为inter，设置参数为:`set disassembly-flavor intel`  
+> 在macos系统的clion中，可以通过设置toolchains的Debugger，设置调试器为GDB而不是LLDB。   
 
 ```sh
 6	    const int NUMBER1 = 1;
@@ -282,12 +283,12 @@ int main()
    
 10	    c = a && b; 
 => 0x00005642644cd275 <+22>:	cmp    DWORD PTR [rbp-0xc],0x0     // 把a与0进行比较 
-   0x00005642644cd279 <+26>:	je     0x5642644cd288 <main()+41>  // 如果a等于0, 跳转到<main()+41>
+   0x00005642644cd279 <+26>:	je     0x5642644cd288 <main()+41>  // 如果a等于0, 跳转到<main()+41> 结果为0
    0x00005642644cd27b <+28>:	cmp    DWORD PTR [rbp-0x8],0x0     // 把b与0进行比较
-   0x00005642644cd27f <+32>:	je     0x5642644cd288 <main()+41>  
-   0x00005642644cd281 <+34>:	mov    eax,0x1
-   0x00005642644cd286 <+39>:	jmp    0x5642644cd28d <main()+46>
-   0x00005642644cd288 <+41>:	mov    eax,0x0
+   0x00005642644cd27f <+32>:	je     0x5642644cd288 <main()+41>  // 如果b等于0, 跳转到<main()+41> 结果为0
+   0x00005642644cd281 <+34>:	mov    eax,0x1                     // 如果a与b都不等于0，结果为1  
+   0x00005642644cd286 <+39>:	jmp    0x5642644cd28d <main()+46>  // 结束了，结果为1
+   0x00005642644cd288 <+41>:	mov    eax,0x0                     // 如果a、b有一个为0，就跳转到这，结果为0
    0x00005642644cd28d <+46>:	movzx  eax,al
    0x00005642644cd290 <+49>:	mov    DWORD PTR [rbp-0x4],eax
 
@@ -309,8 +310,330 @@ int main()
    0x00005642644cd2bb <+92>:	mov    DWORD PTR [rbp-0x4],eax
 ```
 
+从汇编实现中可以看出，两个逻辑运算数，都会检验各自是否为0(false)，如果满足条件跳转到对应位置即可。  
+
+### 赋值运算符  
+| 运算符 | 	描述 | 实例                        |  
+|-------|---------------|---------------------------|
+| =	| 简单的赋值运算符，把右边操作数的值赋给左边操作数 | C = A + B 将把 A + B 的值赋给 C |
+| +=	 | 加且赋值运算符，把右边操作数加上左边操作数的结果赋值给左边操作数	| C += A 相当于 C = C + A      |
+| -=	 | 减且赋值运算符，把左边操作数减去右边操作数的结果赋值给左边操作数	| C -= A 相当于 C = C - A      |
+| *=	 | 乘且赋值运算符，把右边操作数乘以左边操作数的结果赋值给左边操作数	| C *= A 相当于 C = C * A      |
+| /=	 | 除且赋值运算符，把左边操作数除以右边操作数的结果赋值给左边操作数	| C /= A 相当于 C = C / A      |
+| %=	 | 求模且赋值运算符，求两个操作数的模赋值给左边操作数	C %= A | 相当于 C = C % A             |
+| <<= | 	左移且赋值运算符	 | C <<= 2 等同于 C = C << 2    |
+| &gt;&gt;= | 	右移且赋值运算符	 | C >>= 2 等同于 C = C >> 2    |
+| &=	 | 按位与且赋值运算符	 | C &= 2 等同于 C = C & 2      |
+| ^=	 | 按位异或且赋值运算符	 | C ^= 2 等同于 C = C ^ 2      |
+| &#124;=	 | 按位或且赋值运算符	 | C &#124;= 2 等同于 C = C     | 2 |  
+
+实例及汇编实现
+```c++
+6	    int a = 21;
+   0x0000556c23ef6267 <+8>:	mov    DWORD PTR [rbp-0xc],0x15
+
+7	    int b = 10;
+   0x0000556c23ef626e <+15>:	mov    DWORD PTR [rbp-0x8],0xa
+
+8	    int c ;
+9	
+10	    c += a;
+=> 0x0000556c23ef6275 <+22>:	mov    eax,DWORD PTR [rbp-0xc]  // 加载a
+   0x0000556c23ef6278 <+25>:	add    DWORD PTR [rbp-0x4],eax  // 计算c + a
+
+11	    c &= a;
+   0x0000556c23ef627b <+28>:	mov    eax,DWORD PTR [rbp-0xc]
+   0x0000556c23ef627e <+31>:	and    DWORD PTR [rbp-0x4],eax
+```
+
+### 位运算符  
+| 运算符 | 描述 | 实例 |
+|----------|----------|--------|
+| &        | 	按位与操作，按二进制位进行"与"运算。 | A & B) 将得到 12，即为 0000 1100 |
+| &#124;   | 按位或运算符，按二进制位进行"或"运算。| (A | B) 将得到 61，即为 0011 1101 |
+| ^	       | 异或运算符，按二进制位进行"异或"运算。 | (A ^ B) 将得到 49，即为 0011 0001 |
+| ~	       | 取反运算符，按二进制位进行"取反"运算。 | (~A ) 将得到 -61，即为 1100 0011，一个有符号二进制数的补码形式。 |
+| <<       | 二进制左移运算符。将一个运算对象的各二进制位全部左移若干位（左边的二进制位丢弃，右边补0）| A << 2 将得到 240，即为 1111 0000 |
+| &gt;&gt; | 二进制右移运算符。将一个数的各二进制位全部右移若干位，正数左补0，负数左补1，右边丢弃。| A >> 2 将得到 15，即为 0000 1111 |
+
+
+实例及汇编实现
+```c++
+6	    int a = 21;
+   0x00005636333c6267 <+8>:	mov    DWORD PTR [rbp-0xc],0x15
+
+7	    int b = 10;
+   0x00005636333c626e <+15>:	mov    DWORD PTR [rbp-0x8],0xa
+
+8	    int c ;
+9	
+10	    c = a >> 2;
+=> 0x00005636333c6275 <+22>:	mov    eax,DWORD PTR [rbp-0xc]  
+   0x00005636333c6278 <+25>:	sar    eax,0x2                  // SAR destination, count 右移操作符
+   0x00005636333c627b <+28>:	mov    DWORD PTR [rbp-0x4],eax
+
+11	    c = a & b;
+   0x00005636333c627e <+31>:	mov    eax,DWORD PTR [rbp-0xc]
+   0x00005636333c6281 <+34>:	and    eax,DWORD PTR [rbp-0x8]  // 与 
+   0x00005636333c6284 <+37>:	mov    DWORD PTR [rbp-0x4],eax
+```
+
+### 算数优先级
+- 一元运算符的优先级高于二级运算符。
+- 弄不清优先级的，加括号。
+
+### 补码  
+> 有没有一种办法用加法来计算减法 ？ 
+
 
 ## 容器
+### 概念  
+- 代表内存里一组连续的同类型存储区  
+- 可以用来把多个存储区合并成一个整体   
+
+### 数组  
+
+```c++
+6	    int a[] = {1,2,3,4,5,6,7,8};
+=> 0x000055f61bcd829a <+27>:	mov    DWORD PTR [rbp-0x30],0x1  // [rbp-0x30] 既是数组a的地址，也是a[0]的地址 
+   0x000055f61bcd82a1 <+34>:	mov    DWORD PTR [rbp-0x2c],0x2  // 以后每个元素4个字节 
+   0x000055f61bcd82a8 <+41>:	mov    DWORD PTR [rbp-0x28],0x3  
+   0x000055f61bcd82af <+48>:	mov    DWORD PTR [rbp-0x24],0x4
+   0x000055f61bcd82b6 <+55>:	mov    DWORD PTR [rbp-0x20],0x5
+   0x000055f61bcd82bd <+62>:	mov    DWORD PTR [rbp-0x1c],0x6
+   0x000055f61bcd82c4 <+69>:	mov    DWORD PTR [rbp-0x18],0x7
+   0x000055f61bcd82cb <+76>:	mov    DWORD PTR [rbp-0x14],0x8
+
+7	    int b = a[2];
+   0x000055f61bcd82d2 <+83>:	mov    eax,DWORD PTR [rbp-0x28]  // 直接使用数组偏移后的位置[rbp-0x30] [rbp-0x28] 
+   0x000055f61bcd82d5 <+86>:	mov    DWORD PTR [rbp-0x34],eax
+```
+
+> 数组下标从0开始的原因就是地址的偏移量为0  
+
+*二维数组*
+
+实例及汇编实现  
+```
+6	    int a[2][4] = {{1,2,3,4},{5,6,7,8}};
+=> 0x0000560568ded29a <+27>:	mov    DWORD PTR [rbp-0x30],0x1
+   0x0000560568ded2a1 <+34>:	mov    DWORD PTR [rbp-0x2c],0x2
+   0x0000560568ded2a8 <+41>:	mov    DWORD PTR [rbp-0x28],0x3
+   0x0000560568ded2af <+48>:	mov    DWORD PTR [rbp-0x24],0x4
+   0x0000560568ded2b6 <+55>:	mov    DWORD PTR [rbp-0x20],0x5
+   0x0000560568ded2bd <+62>:	mov    DWORD PTR [rbp-0x1c],0x6
+   0x0000560568ded2c4 <+69>:	mov    DWORD PTR [rbp-0x18],0x7
+   0x0000560568ded2cb <+76>:	mov    DWORD PTR [rbp-0x14],0x8
+
+7	    int b = a[2][3];
+   0x0000560568ded2d2 <+83>:	mov    eax,DWORD PTR [rbp-0x4]
+   0x0000560568ded2d5 <+86>:	mov    DWORD PTR [rbp-0x34],eax
+```
+
+可以看出一维数组与二维数组的内存排列是一致的，也是线性排列的，只有有两个索引位置，需要计算行列的值。  
+
+### 动态数组Vector  
+- 面向对象方式的动态数组
+
+#### vector的数据结构
+不同操作系统表示的方式不同。以下是MACOS系统Clion的  
+源码路径:`/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/include/c++/v1/vector`    
+![vector的数据结构](../../res/vector_struct.png)  
+
+Centos的VSCODE的  
+![Centos的VSCODE的](../../res/centos-clion.png)  
+
+Ubuntu的Clion的, Ubuntu的vscode也是这样的:scream:      
+![Ubuntu的Clion的](../../res/ubuntu-clion.png)
+
+> 不同系统及不同版本的汇编实现都是有差异的  
+
+
+实例
+```c++
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void printVec(string tag, vector<int> vs)
+{
+    cout << tag << " ";
+    for(int i=0; i < vs.size(); i++)
+    {
+        if(i == vs.size() - 1)
+        {
+            cout << vs[i] << endl;
+        }else
+        {
+            cout << vs[i] << ",";
+        }
+    }
+
+    cout << "size:" << vs.size() << ",cap:" << vs.capacity() << endl;
+}
+
+
+int main() {
+    vector<int> vs = {1,2,3,4};
+    vs.push_back(5);
+    printVec("init", vs);
+
+    vs.insert(--vs.end(), 6);
+    printVec("insert", vs);
+
+    vs.pop_back();
+    vs.erase(vs.end() - 2);
+    printVec("delete", vs);
+
+    return 0;
+}
+```
+
+初始化和插入元素的汇编实现
+```c++
+Dump of assembler code for function main():
+4	int main() {
+   0x0000000100002260 <+0>:	push   rbp
+   0x0000000100002261 <+1>:	mov    rbp,rsp
+   0x0000000100002264 <+4>:	sub    rsp,0x70
+   0x0000000100002268 <+8>:	mov    rax,QWORD PTR [rip+0x1db1]        # 0x100004020
+   0x000000010000226f <+15>:	mov    rax,QWORD PTR [rax]
+   0x0000000100002272 <+18>:	mov    QWORD PTR [rbp-0x8],rax
+   0x0000000100002276 <+22>:	mov    DWORD PTR [rbp-0x1c],0x0
+
+5	    vector<int> vs = {1,2,3,4};
+=> 0x000000010000227d <+29>:	mov    DWORD PTR [rbp-0x18],0x1  // [rbp-0x18]是数组的地址
+   0x0000000100002284 <+36>:	mov    DWORD PTR [rbp-0x14],0x2
+   0x000000010000228b <+43>:	mov    DWORD PTR [rbp-0x10],0x3
+   0x0000000100002292 <+50>:	mov    DWORD PTR [rbp-0xc],0x4
+   0x0000000100002299 <+57>:	lea    rax,[rbp-0x18]            //[rbp-0x18] 赋值给rax 
+   0x000000010000229d <+61>:	mov    QWORD PTR [rbp-0x48],rax  // rax-> [rbp-0x48]
+   0x00000001000022a1 <+65>:	mov    QWORD PTR [rbp-0x40],0x4  // 元素个数为4 
+   0x00000001000022a9 <+73>:	mov    rsi,QWORD PTR [rbp-0x48]
+   0x00000001000022ad <+77>:	mov    rdx,QWORD PTR [rbp-0x40]
+   0x00000001000022b1 <+81>:	lea    rax,[rbp-0x38]            // 第三个变量 [rbp-0x38] 
+   0x00000001000022b5 <+85>:	mov    rdi,rax
+   0x00000001000022b8 <+88>:	mov    QWORD PTR [rbp-0x68],rax  // 本地变量vs (vector<int> vs)
+   0x00000001000022bc <+92>:	call   0x100002340 <std::__1::vector<int, std::__1::allocator<int> >::vector(std::initializer_list<int>)>
+
+6	    vs.push_back(5);
+   0x00000001000022c1 <+97>:	mov    DWORD PTR [rbp-0x4c],0x5  // 加载5为[rbp-0x4c]
+   0x00000001000022c8 <+104>:	lea    rsi,[rbp-0x4c]
+   0x00000001000022cc <+108>:	mov    rdi,QWORD PTR [rbp-0x68]  // 变量vs , push_back方法传递两个变量 this和5  
+   0x00000001000022d0 <+112>:	call   0x100002370 <std::__1::vector<int, std::__1::allocator<int> >::push_back(int&&)>
+   0x00000001000022d5 <+117>:	jmp    0x1000022da <main()+122>
+
+7	
+8	    return 0;
+   0x00000001000022da <+122>:	mov    DWORD PTR [rbp-0x1c],0x0
+
+9	}  // 在方法结束时，调用了vector的析构函数  
+   0x00000001000022e1 <+129>:	lea    rdi,[rbp-0x38]
+   0x00000001000022e5 <+133>:	call   0x1000023e0 <std::__1::vector<int, std::__1::allocator<int> >::~vector()>
+   0x00000001000022ea <+138>:	mov    eax,DWORD PTR [rbp-0x1c]
+   0x00000001000022ed <+141>:	mov    rcx,QWORD PTR [rip+0x1d2c]        # 0x100004020
+   0x00000001000022f4 <+148>:	mov    rcx,QWORD PTR [rcx]
+   0x00000001000022f7 <+151>:	mov    rdx,QWORD PTR [rbp-0x8]
+   0x00000001000022fb <+155>:	cmp    rcx,rdx
+   0x00000001000022fe <+158>:	mov    DWORD PTR [rbp-0x6c],eax
+   0x0000000100002301 <+161>:	jne    0x10000232b <main()+203>
+   0x0000000100002307 <+167>:	mov    eax,DWORD PTR [rbp-0x6c]
+   0x000000010000230a <+170>:	add    rsp,0x70
+   0x000000010000230e <+174>:	pop    rbp
+   0x000000010000230f <+175>:	ret    
+   0x0000000100002310 <+176>:	mov    QWORD PTR [rbp-0x58],rax
+   0x0000000100002314 <+180>:	mov    DWORD PTR [rbp-0x5c],edx
+   0x0000000100002317 <+183>:	lea    rdi,[rbp-0x38]
+   0x000000010000231b <+187>:	call   0x1000023e0 <std::__1::vector<int, std::__1::allocator<int> >::~vector()>
+   0x0000000100002320 <+192>:	mov    rdi,QWORD PTR [rbp-0x58]
+   0x0000000100002324 <+196>:	call   0x100003cfe
+   0x0000000100002329 <+201>:	ud2    
+   0x000000010000232b <+203>:	call   0x100003d5e
+   0x0000000100002330 <+208>:	ud2    
+   0x0000000100002332 <+210>:	nop    WORD PTR cs:[rax+rax*1+0x0]
+   0x000000010000233c <+220>:	nop    DWORD PTR [rax+0x0]
+
+End of assembler dump.
+```
+
+
+
+`c++/v1/vector`文件中vector的创建及`push_back`方法  
+创建方法
+```
+template <class _Tp, class _Allocator>
+inline _LIBCPP_INLINE_VISIBILITY
+vector<_Tp, _Allocator>::vector(initializer_list<value_type> __il)
+{
+#if _LIBCPP_DEBUG_LEVEL >= 2
+    __get_db()->__insert_c(this);
+#endif
+    if (__il.size() > 0)
+    {
+        __vallocate(__il.size());
+        __construct_at_end(__il.begin(), __il.end(), __il.size());
+    }
+}
+```
+
+添加元素方法  
+```c++
+template <class _Tp, class _Allocator>
+inline _LIBCPP_INLINE_VISIBILITY
+void
+vector<_Tp, _Allocator>::push_back(value_type&& __x)
+{
+    if (this->__end_ < this->__end_cap())
+    {
+        __construct_one_at_end(_VSTD::move(__x));
+    }
+    else
+        __push_back_slow_path(_VSTD::move(__x));
+}
+```
+
+### 字符串  
+- 以字符'\0'结束  
+
+汇编实现
+```c++
+35	    char str[] = {"HelloWorld"};
+                                // 编译器在解释字符串时，就在最后增加了'\0'结束符
+   0x0000000100003dfc <+652>:	mov    rax,QWORD PTR [rip+0x3fd4]        # 0x100007dd7 => "HelloWorld\0" 
+   0x0000000100003e03 <+659>:	mov    QWORD PTR [rbp-0x23],rax
+   0x0000000100003e07 <+663>:	mov    cx,WORD PTR [rip+0x3fd1]        # 0x100007ddf => allocator<T>...
+   0x0000000100003e0e <+670>:	mov    WORD PTR [rbp-0x1b],cx
+   0x0000000100003e12 <+674>:	mov    dl,BYTE PTR [rip+0x3fc9]        # 0x100007de1
+   0x0000000100003e18 <+680>:	mov    BYTE PTR [rbp-0x19],dl
+```
+
+查看内存地址
+```shell 
+(gdb) x/32c 0x100007dd7
+0x100007dd7:	72 'H'	101 'e'	108 'l'	108 'l'	111 'o'	87 'W'	111 'o'	114 'r'
+0x100007ddf:	108 'l'	100 'd'	0 '\000'	97 'a'	108 'l'	108 'l'	111 'o'	99 'c'
+0x100007de7:	97 'a'	116 't'	111 'o'	114 'r'	60 '<'	84 'T'	62 '>'	58 ':'
+0x100007def:	58 ':'	97 'a'	108 'l'	108 'l'	111 'o'	99 'c'	97 'a'	116 't'
+
+(gdb) x/32s 0x100007ddf
+0x100007ddf:	"ld"
+0x100007de2:	"allocator<T>::allocate(size_t n) 'n' exceeds maximum supported size"
+0x100007e26:	""
+0x100007e27:	""
+0x100007e28:	"\001"
+
+(gdb) x/32s 0x100007de1
+0x100007de1:	""
+0x100007de2:	"allocator<T>::allocate(size_t n) 'n' exceeds maximum supported size"
+0x100007e26:	""
+0x100007e27:	""
+0x100007e28:	"\001"
+```
+
+> 字符串创建时"HelloWorld\0"已经存在，接着调用`allocator<T>::allocate(size_t n)`，`vector创建时`也会调用该方法 ？  
+
+
+
 ## 指针
 ## 基础句法
 ## 高级语法
