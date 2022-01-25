@@ -443,6 +443,15 @@ int main()
 Centos的VSCODE的  
 ![Centos的VSCODE的](../../res/centos-clion.png)  
 
+数据结构如下:
+```
+(vector)._M_impl
+((vector)._M_impl)._M_start
+((vector)._M_impl)._M_finish
+((vector)._M_impl)._M_end_of_storage
+
+```
+
 Ubuntu的Clion的, Ubuntu的vscode也是这样的:scream:      
 ![Ubuntu的Clion的](../../res/ubuntu-clion.png)
 
@@ -489,7 +498,7 @@ int main() {
 }
 ```
 
-初始化和插入元素的汇编实现
+初始化和插入元素的汇编实现`macos clion`
 ```c++
 Dump of assembler code for function main():
 4	int main() {
@@ -554,8 +563,145 @@ Dump of assembler code for function main():
    0x000000010000233c <+220>:	nop    DWORD PTR [rax+0x0]
 
 End of assembler dump.
+```  
+
+从clion中可以看出方法的原始名称不需要转换，如果使用vscode连接centos7虚拟机的汇编实现如下:
+```c++
+-exec disass /m
+Dump of assembler code for function main():
+23	int main() {
+   0x0000000000400dc6 <+0>:	push   rbp
+   0x0000000000400dc7 <+1>:	mov    rbp,rsp
+   0x0000000000400dca <+4>:	push   r13
+   0x0000000000400dcc <+6>:	push   r12
+   0x0000000000400dce <+8>:	push   rbx
+   0x0000000000400dcf <+9>:	sub    rsp,0x28
+
+24	    vector<int> vs = {1,2,3,4};
+   0x0000000000400dd3 <+13>:	lea    rax,[rbp-0x25]
+   0x0000000000400dd7 <+17>:	mov    rdi,rax
+   0x0000000000400dda <+20>:	call   0x400f58 <_ZNSaIiEC2Ev>  // std::allocator<int>::allocator()
+   0x0000000000400ddf <+25>:	mov    r12d,0x401ec0
+   0x0000000000400de5 <+31>:	mov    r13d,0x4
+   0x0000000000400deb <+37>:	lea    rdi,[rbp-0x25]
+   0x0000000000400def <+41>:	mov    rcx,r12
+   0x0000000000400df2 <+44>:	mov    rbx,r13
+   0x0000000000400df5 <+47>:	mov    rax,r12
+   0x0000000000400df8 <+50>:	mov    rdx,r13
+   0x0000000000400dfb <+53>:	mov    rsi,rcx
+   0x0000000000400dfe <+56>:	lea    rax,[rbp-0x40]
+   0x0000000000400e02 <+60>:	mov    rcx,rdi
+   0x0000000000400e05 <+63>:	mov    rdi,rax
+   0x0000000000400e08 <+66>:	call   0x400fe6 <_ZNSt6vectorIiSaIiEEC2ESt16initializer_listIiERKS0_>  //std::vector<int, std::allocator<int> >::vector(std::initializer_list<int>, std::allocator<int> const&)
+   0x0000000000400e0d <+71>:	lea    rax,[rbp-0x25]
+   0x0000000000400e11 <+75>:	mov    rdi,rax
+   0x0000000000400e14 <+78>:	call   0x400f72 <_ZNSaIiED2Ev> // std::allocator<int>::~allocator() 
+
+25	    vs.push_back(5);
+   0x0000000000400e19 <+83>:	mov    DWORD PTR [rbp-0x24],0x5
+   0x0000000000400e20 <+90>:	lea    rdx,[rbp-0x24]
+   0x0000000000400e24 <+94>:	lea    rax,[rbp-0x40]
+   0x0000000000400e28 <+98>:	mov    rsi,rdx
+   0x0000000000400e2b <+101>:	mov    rdi,rax
+   0x0000000000400e2e <+104>:	call   0x4010c8 <_ZNSt6vectorIiSaIiEE9push_backEOi> // std::vector<int, std::allocator<int> >::push_back(int&&)
+   
+26	
+27	    return 0;
+=> 0x0000000000400e33 <+109>:	mov    ebx,0x0
+   0x0000000000400e38 <+114>:	lea    rax,[rbp-0x40]
+   0x0000000000400e3c <+118>:	mov    rdi,rax
+   0x0000000000400e3f <+121>:	call   0x401076 <_ZNSt6vectorIiSaIiEED2Ev>   // std::vector<int, std::allocator<int> >::~vector()  
+   0x0000000000400e44 <+126>:	mov    eax,ebx
+   0x0000000000400e46 <+128>:	jmp    0x400e7c <main()+182>
+   0x0000000000400e48 <+130>:	mov    rbx,rax
+   0x0000000000400e4b <+133>:	lea    rax,[rbp-0x25]
+   0x0000000000400e4f <+137>:	mov    rdi,rax
+   0x0000000000400e52 <+140>:	call   0x400f72 <_ZNSaIiED2Ev>  // std::allocator<int>::~allocator()
+   0x0000000000400e57 <+145>:	mov    rax,rbx
+   0x0000000000400e5a <+148>:	mov    rdi,rax
+   0x0000000000400e5d <+151>:	call   0x400b80 <_Unwind_Resume@plt>
+   0x0000000000400e62 <+156>:	mov    rbx,rax
+   0x0000000000400e65 <+159>:	lea    rax,[rbp-0x40]
+   0x0000000000400e69 <+163>:	mov    rdi,rax
+   0x0000000000400e6c <+166>:	call   0x401076 <_ZNSt6vectorIiSaIiEED2Ev> // std::vector<int, std::allocator<int> >::~vector()  
+   0x0000000000400e71 <+171>:	mov    rax,rbx
+   0x0000000000400e74 <+174>:	mov    rdi,rax
+   0x0000000000400e77 <+177>:	call   0x400b80 <_Unwind_Resume@plt>
+
+28	}
+   0x0000000000400e7c <+182>:	add    rsp,0x28
+   0x0000000000400e80 <+186>:	pop    rbx
+   0x0000000000400e81 <+187>:	pop    r12
+   0x0000000000400e83 <+189>:	pop    r13
+   0x0000000000400e85 <+191>:	pop    rbp
+   0x0000000000400e86 <+192>:	ret    
+End of assembler dump.
 ```
 
+可以使用`c++filt`工具，centos安装指令`yum install binutils`
+```shell
+c++filt _ZNSt6vectorIiSaIiEEC2ESt16initializer_listIiERKS0_
+std::vector<int, std::allocator<int> >::vector(std::initializer_list<int>, std::allocator<int> const&)
+```
+做一个 [小工具]() 自动转换该指令，翻译后的结果就是正常的函数名了  
+```go
+package main
+
+import (
+	"container/list"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"strings"
+)
+
+func main() {
+
+	// 读取输入文件
+	currPath, _ := os.Getwd()
+
+	// 输入文件路径, 使用os.Stdin vscode命令行无法交互输入
+	file, err := os.Open(currPath + "/inputfile")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	contents, err := ioutil.ReadAll(file)
+	strs := string(contents)
+	lines := strings.Split(strs, "\n")
+	results := list.New()
+
+	// 解析数据
+	for _, line := range lines {
+		if strings.Contains(line, "<_ZN") {
+			start := strings.Index(line, "<_ZN")
+			end := strings.LastIndex(line, ">")
+
+			funcSymbol := line[start+1 : end]
+			// 执行c++filt 命令
+			cmd := exec.Command("/usr/bin/c++filt", funcSymbol)
+			out, _ := cmd.CombinedOutput()
+			funcName := string(out)
+
+			line = line[:start] + funcName
+		}
+		results.PushBack(line)
+	}
+
+	for i := results.Front(); i != nil; i = i.Next() {
+		fmt.Println(i.Value)
+	}
+```
+
+目前可以看到`vector`的内存创建与`std::allocator<int>::allocator()`和`std::initializer_list<int>`有关系  
+
+> 需要注意c++源码的版本，目前在centos使用`gcc-g++ 4.8.5`版本，对应的源码为gcc-g++-4.8.2-x86_64-1.txz
+> 路径是"/usr/include/c++/4.8.2/bits/stl_vector.h"  
+
+> vs版本、gcc版本、c++版本之间的关系   
+> c++版本是一个标准，需要编译器支持。比如c++11标准, `gcc4.8.1`及以上可以完全支持。`vs2015`可以完全支持。  
 
 
 `c++/v1/vector`文件中vector的创建及`push_back`方法  
@@ -574,7 +720,7 @@ vector<_Tp, _Allocator>::vector(initializer_list<value_type> __il)
         __construct_at_end(__il.begin(), __il.end(), __il.size());
     }
 }
-```
+```  
 
 添加元素方法  
 ```c++
@@ -599,7 +745,7 @@ vector<_Tp, _Allocator>::push_back(value_type&& __x)
 ```c++
 35	    char str[] = {"HelloWorld"};
                                 // 编译器在解释字符串时，就在最后增加了'\0'结束符
-   0x0000000100003dfc <+652>:	mov    rax,QWORD PTR [rip+0x3fd4]        # 0x100007dd7 => "HelloWorld\0" 
+   0x0000000100003dfc <+652>:	mov    rax,QWORD PTR [rip+0x3fd4]       # 0x100007dd7 => "HelloWorld\0" 
    0x0000000100003e03 <+659>:	mov    QWORD PTR [rbp-0x23],rax
    0x0000000100003e07 <+663>:	mov    cx,WORD PTR [rip+0x3fd1]        # 0x100007ddf => allocator<T>...
    0x0000000100003e0e <+670>:	mov    WORD PTR [rbp-0x1b],cx
@@ -609,7 +755,7 @@ vector<_Tp, _Allocator>::push_back(value_type&& __x)
 
 查看内存地址
 ```shell 
-(gdb) x/32c 0x100007dd7
+(gdb) x/32c 0x100007dd7    // 字符串结束时有个结束符'\0'  
 0x100007dd7:	72 'H'	101 'e'	108 'l'	108 'l'	111 'o'	87 'W'	111 'o'	114 'r'
 0x100007ddf:	108 'l'	100 'd'	0 '\000'	97 'a'	108 'l'	108 'l'	111 'o'	99 'c'
 0x100007de7:	97 'a'	116 't'	111 'o'	114 'r'	60 '<'	84 'T'	62 '>'	58 ':'
@@ -632,12 +778,618 @@ vector<_Tp, _Allocator>::push_back(value_type&& __x)
 
 > 字符串创建时"HelloWorld\0"已经存在，接着调用`allocator<T>::allocate(size_t n)`，`vector创建时`也会调用该方法 ？  
 
+查看不同0值的含义  
+```c++
+#include <iostream>
+using namespace std;
 
+int main()
+{
+    char a1 = 0;    // 0x00
+    char a2= '\0';  // 0x00
+    char a3 = '0';  // 0x30
+    return 0;
+}
+```
+
+通过gdb查看内存值  
+```
+-exec x/bb &a1
+0x7fffffffdcff:	0x00
+
+-exec x/bb &a2
+0x7fffffffdcfe:	0x00
+
+-exec x/bb &a3
+0x7fffffffdcfd:	0x30
+
+-exec x/db &a3        // d 十进制显示   b显示单位为byte  
+0x7fffffffdcfd:	48
+```
+
+从中可以看出`0`与`'\0'`是等价的  
+
+#### unicode编码  
+- Unicode编码:最初的目的是把世界上的文字都映射到一套字符空间中  
+- 为了表示Unicode字符集，有3种(确切的说是5种)Unicode的编码方式:  
+  - UTF-8: 1 byte来表示字符，可以兼容ASCII码; 特点是存储效率高，变长(不方便内部随机访问)，无字节序问题(可作为外部编码)  
+  - UTF-16:分为UTF-16BE(big endian), UTF-16LE(ittle endian),特点是定长(方便内部随机访问), 有字节序问题(不可作为外部编码)  
+  - UTF-32:分为UTF-32BE(big endian), UTF-32LE(ittle endian),特点是定长(方便内部随机访问), 有字节序问题(不可作为外部编码)
+- 编码错误的根本原因在于编码方式和解码方式的不统一;  
+
+> Windows的文件可能有BOM(byte order mark)如要在其他平台使用，可以去掉BOM  
+
+```
+// utf-8 格式
+68 65 6C 6C 6F 77 6F 72 6C 64   |   helloworld  
+
+//utf-16 LE   在utf-8的基础上增加一个byte 00 
+68 00 65 00 6C 00 6C 00 6F 00 77 00 6F 00 72 00 6C 00 64 00   |     h e l l o w o r l d 
+
+//utf-16 BE
+00 68 00 65 00 6C 00 6C 00 6F 00 77 00 6F 00 72 00 6C 00 64   |      h e l l o w o r l d
+```
+
+
+#### 字符串指针  
+> 指向常量区的字符串指针，内容不能被修改。(常量区只读)。 golang中的字符串内容是可以修改的，没有常量区不能修改这一说。  
+
+```c++
+#include <string.h>
+#include <iostream>
+using namespace std;
+int main()
+{
+    // 定义一个数组
+    char strHelloWorld[11] = {"helloworld"}; // 这个定义可以, 字符存放到数组中  
+    char *pStrHelloWrold = "helloworld";     // 常量区的值是不可以改变的
+    pStrHelloWrold = strHelloWorld;
+    //strHelloWorld = pStrHelloWrold;        // 数组变量的值不允许改变
+
+    // 通过数组变量遍历修改数组中的元素值
+    for (int index = 0; index < strlen(strHelloWorld); ++index)
+    {
+        strHelloWorld[index] += 1;
+        std::cout << strHelloWorld[index];
+    }
+    cout << endl; // 换行  
+
+    // 通过指针变量遍历修改数组中的元素值  
+    for (int index = 0; index < strlen(strHelloWorld); ++index)
+    {
+        pStrHelloWrold[index] += 1;  
+        std::cout << pStrHelloWrold[index];  
+    }
+
+    cout << endl; // 换行
+    
+    // 计算字符串长度
+    cout << "字符串长度为: " << strlen(strHelloWorld) << endl;
+    cout << "字符串占用空间为:  " << sizeof(strHelloWorld) << endl;
+
+    return 0;
+}
+```
+
+输出结果 
+```
+ifmmpxpsme
+jgnnqyqtnf
+字符串长度为: 10
+字符串占用空间为:  11
+```
+
+### 字符串基本操作  
+```c++
+/* Copy SRC to DEST.  */
+extern char *strcpy (char *__restrict __dest, const char *__restrict __src)
+/* Copy no more than N characters of SRC to DEST.  */
+extern char *strncpy (char *__restrict __dest,const char *__restrict __src, size_t __n)
+
+/* Append SRC onto DEST.  */
+extern char *strcat (char *__restrict __dest, const char *__restrict __src)
+
+/* Compare S1 and S2.  */  // 0 相等; 正数 S1 > S1; 负数 S1 < S1;  
+extern int strcmp (const char *__s1, const char *__s2)
+
+/* Return the length of S.  */
+extern size_t strlen (const char *__s)
+
+/* Find the first occurrence of C in S.  */   // 第一次出现char的位置  
+extern char *strchr (char *__s, int __c)
+
+/* Find the first occurrence of NEEDLE in HAYSTACK.  */  // 字符串查找  
+extern char *strstr (char *__haystack, const char *__needle)
+
+
+
+```
+
+基础操作示例`<string.h> 使用C库的头文件`  
+```
+#include <string.h> //使用C库的头文件
+#include <iostream>
+using namespace std;
+const unsigned int MAX_LEN_NUM = 16;
+const unsigned int STR_LEN_NUM = 7;
+const unsigned int NUM_TO_COPY = 2;
+int main()
+{
+    char strHelloWorld1[] = {"hello"};
+    char strHelloWorld2[STR_LEN_NUM] = {"world1"};
+    char strHelloWorld3[MAX_LEN_NUM] = {0};
+
+    // 字符串拷贝  (dest, src)
+    strcpy(strHelloWorld3, strHelloWorld1); // hello
+    // strcpy_s(strHelloWorld3, MAX_LEN_NUM, strHelloWorld1);
+
+    int res = strcmp(strHelloWorld1, strHelloWorld2);
+    cout << "cmp result:" << res << ";" << strHelloWorld1 << ":" << strHelloWorld2 << endl;
+
+    strncpy(strHelloWorld3, strHelloWorld2, NUM_TO_COPY); // wollo
+    // strncpy_s(strHelloWorld3, MAX_LEN_NUM,  strHelloWorld2, NUM_TO_COPY);
+
+    // 字符串拼接(dest, src), 追加的方式    
+    strcat(strHelloWorld3, strHelloWorld2); //  wolloworld1
+    // strcat_s(strHelloWorld3, MAX_LEN_NUM, strHelloWorld2);
+
+    unsigned int len = strlen(strHelloWorld3);
+    // unsigned int len = strnlen_s(strHelloWorld3, MAX_LEN_NUM);
+    for (unsigned int index = 0; index < len; ++index)
+    {
+        cout << strHelloWorld3[index] << "";
+    }
+    cout << endl;
+
+    // 小心缓冲区溢出
+    strcat(strHelloWorld2, "Welcome to C++");
+    // strcat_s(strHelloWorld2, STR_LEN_NUM, "Welcome to C++");
+
+    return 0;
+}
+```
+
+> c中原始字符串的安全性和效率存在一定问题  
+> 缓冲区溢出、strlen的效率可以提高(空间换时间)  
+> redis字符串中增加了长度信息，可以直接查询    
+
+```c
+typedef char *sds;
+
+
+struct sdshdr {
+
+    // buf 已占用长度
+    int len;
+
+    // buf 剩余可用长度
+    int free;
+
+    // 实际保存字符串数据的地方
+    char buf[];
+};
+```
+
+另一种字符串`<string> Forward declarations -*- C++ -*-`文件名为`stringfwd.h`    
+```
+  /// A string of @c char
+  typedef basic_string<char>    string;  
+```
+
+- c++标准库中提供了string类型专门表示字符串 `#include <string>` 
+- 使用string可以更为方便和安全的管理字符串  
+- 定义字符串变量的方式: `string s` 、`string s = "hello"`、`string s("helloworld")`  
+
+基础操作示例:
+```
+#include <iostream>
+#include <string>
+using namespace std;
+int main()
+{
+    // 字符串定义
+    string s1;                //定义空字符串
+    string s2 = "helloworld"; //定义并初始化
+    string s3("helloworld");
+    string s4 = string("helloworld");
+
+    // 获取字符串长度  length与size 等价的
+    cout << "length:" << s2.length() << endl;     // _M_length
+    cout << "size:" << s2.size() << endl;         // _M_length
+    cout << "capacity:" << s2.capacity() << endl; // _M_capacity
+
+    // 字符串比较
+    s1 = "hello", s2 = "world";
+    cout << "(s1==s2):" << (s1 == s2) << endl;
+    cout << "(s1!=s2):" << (s1 != s2) << endl;
+    cout << "(s1<s2):" << (s1 < s2) << endl;
+
+    //  转换成C风格的字符串
+    const char *c_str1 = s1.c_str();
+    cout << "The C-style string c_str1 is: " << c_str1 << endl;
+    //  随机访问
+    for (unsigned int index = 0; index < s1.length(); ++index)
+    {
+        cout << c_str1[index] << " ";
+    }
+    cout << endl;
+    for (unsigned int index = 0; index < s1.length(); ++index)
+    {
+        cout << s1[index] << " ";
+    }
+    cout << endl;
+
+    // 字符串拷贝
+    s1 = "helloworld";
+    s2 = s1;
+
+    // 字符串连接
+    s1 = "helllo", s2 = "world";
+    s3 = s1 + s2; //s3: helloworld
+    s1 += s2;     //s1: helloworld
+    return 0;
+}
+```
+
+> string 结合了C++的新特性，使用起来比原始的C风格方法更安全和方便，对性能要求不是特别高的场景可以使用。  
 
 ## 指针
+### 数组指针和指针数组 
+- 数组的指针 `T (*pA)[]`   
+- 指针的数组 `T* a[]`  
+
+示例代码
+```c++
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int a[4] = {0x80000000, 0x000000FF, 3, 4};
+    int *pA = a; // &a[0]  // 指针指向数组首地址
+    cout << "a数组地址:" << a << ",pA[0]:" << pA[0] << ",pA[1]:" << pA[1] << endl;
+
+    int* pArr[4] = {&a[0], &a[1], &a[2], &a[3]};  // 指针的数组   T pArr[4]  => T = int* 
+    // 输出的是指针的地址 0x7fffffffdcd0  
+    cout << "pArr[0]:" << pArr[0] << ",pArr[1]:" << pArr[1] << endl;
+
+    // 指向int[4]数组的指针  a pointer to an array 
+    int (*arrP)[4];    // 数组的指针  T (*pArr)[4] => T = int
+    arrP = &a;         // 数组的个数必须一致  
+
+    // arrP[0] 相当于指针的偏移操作，偏移量为0,那就指向a数组的地址  //arrP[1] 偏移16个字节(4字节x4个元素)  
+    cout << "arrP[0]:" << arrP[0] << ",arrP[1]:" << arrP[1] << endl;
+    // (*arrP) 是指向数组的地址，(*arrP)[0] 是指向数组地址的首个元素  
+    cout << "(*arrP)[0]:" << (*arrP)[0] << ",(*arrP)[1]:" << (*arrP)[1] << endl;
+
+}
+```
+
+打印输出 
+```shell
+a数组地址:0x7fffffffdcd0,pA[0]:-2147483648,pA[1]:255
+pArr[0]:0x7fffffffdcd0,pArr[1]:0x7fffffffdcd4
+arrP[0]:0x7fffffffdcd0,arrP[1]:0x7fffffffdce0      // arrP[0] 数组a的地址, arrP[0] 偏移16个字节的地址 
+(*arrP)[0]:-2147483648,(*arrP)[1]:255
+```  
+
+> 需要特别注意的是`c/c++`中指针(内存地址)是可以进行运算的，一种方式是`arrP + 1`，另一种方式是`arrP[1]` 含义是相同的  
+
 ## 基础句法
 ## 高级语法
 ## 编程思想
+
+### 泛型编程思想  
+- 如果说面向对象是一种通过间接层来调用函数，以换取一种抽象，那么泛型编程则是更直接的抽象，它不会因为间接层而损失效率;
+- 不同于面向对象的动态期多态，泛型编程是一种静态期多态，通过编译器生成最直接的代码；
+- 泛型编程可以将算法与特定类型、结构剥离，尽可能复用代码；
+
+样例
+```c++
+#include <iostream>
+#include <string.h>
+// 不能使用 using namespace std; 
+template <typename V> // template <class V>  两种方式一样
+V max(V a, V b)
+{
+    return a > b ? a : b;
+}
+
+// 特例  
+template<>
+char* max(char* a, char* b)
+{
+    return (strcmp(a, b) > 0 ? a : b);
+}
+// 两种不同类型比较  
+template<typename V1, typename V2>
+int max(V1 a, V2 b)
+{
+    return static_cast<int>(a > b ? a : b);
+}
+
+int main() 
+{
+    std::cout << max(2, 4) << std::endl;
+    std::cout << max(7.1, 5.6) << std::endl;
+    std::cout << max('a', 'b') << std::endl;
+
+    char* x = "1234";
+    char* y = "2345";
+    std::cout << max(x, y) << std::endl;
+
+    std::cout << max(10, 12.8) << std::endl;
+    return 0;
+}
+```
+
+输出结果:
+```
+4
+7.1
+b
+2345
+12
+```
+
+从汇编实现中可以看出`max`函数在编译时被替换成对应的类型   
+比如:
+- max(2, 4) => int max<int>(int, int)  
+- max('a', 'b') => char max<char>(char, char)  
+- max(10, 12.8) => int max<int, double>(int, double)  
+
+以下是汇编实现  
+```c++
+Dump of assembler code for function main():
+24	{
+   0x0000000000400960 <+0>:	push   rbp
+   0x0000000000400961 <+1>:	mov    rbp,rsp
+   0x0000000000400964 <+4>:	sub    rsp,0x20
+
+25	    std::cout << max(2, 4) << std::endl;
+   0x0000000000400968 <+8>:	mov    esi,0x4
+   0x000000000040096d <+13>:	mov    edi,0x2
+   0x0000000000400972 <+18>:	call   0x400adb int max<int>(int, int)
+
+   0x0000000000400977 <+23>:	mov    esi,eax
+   0x0000000000400979 <+25>:	mov    edi,0x602080
+   0x000000000040097e <+30>:	call   0x400790 _ZNSolsEi@plt
+
+   0x0000000000400983 <+35>:	mov    esi,0x400830
+   0x0000000000400988 <+40>:	mov    rdi,rax
+   0x000000000040098b <+43>:	call   0x400820 _ZNSolsEPFRSoS_E@plt
+
+
+26	    std::cout << max(7.1, 5.6) << std::endl;
+   0x0000000000400990 <+48>:	movabs rdx,0x4016666666666666
+   0x000000000040099a <+58>:	movabs rax,0x401c666666666666
+   0x00000000004009a4 <+68>:	mov    QWORD PTR [rbp-0x18],rdx
+   0x00000000004009a8 <+72>:	movsd  xmm1,QWORD PTR [rbp-0x18]
+   0x00000000004009ad <+77>:	mov    QWORD PTR [rbp-0x18],rax
+   0x00000000004009b1 <+81>:	movsd  xmm0,QWORD PTR [rbp-0x18]
+   0x00000000004009b6 <+86>:	call   0x400af7 double max<double>(double, double)
+
+   0x00000000004009bb <+91>:	movsd  QWORD PTR [rbp-0x18],xmm0
+   0x00000000004009c0 <+96>:	mov    rax,QWORD PTR [rbp-0x18]
+   0x00000000004009c4 <+100>:	mov    QWORD PTR [rbp-0x18],rax
+   0x00000000004009c8 <+104>:	movsd  xmm0,QWORD PTR [rbp-0x18]
+   0x00000000004009cd <+109>:	mov    edi,0x602080
+   0x00000000004009d2 <+114>:	call   0x400780 _ZNSolsEd@plt
+
+   0x00000000004009d7 <+119>:	mov    esi,0x400830
+   0x00000000004009dc <+124>:	mov    rdi,rax
+   0x00000000004009df <+127>:	call   0x400820 _ZNSolsEPFRSoS_E@plt
+
+
+27	    std::cout << max('a', 'b') << std::endl;
+   0x00000000004009e4 <+132>:	mov    esi,0x62
+   0x00000000004009e9 <+137>:	mov    edi,0x61
+   0x00000000004009ee <+142>:	call   0x400b26 char max<char>(char, char)
+
+   0x00000000004009f3 <+147>:	movsx  eax,al
+   0x00000000004009f6 <+150>:	mov    esi,eax
+   0x00000000004009f8 <+152>:	mov    edi,0x602080
+   0x00000000004009fd <+157>:	call   0x4007e0 _ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_c@plt
+
+   0x0000000000400a02 <+162>:	mov    esi,0x400830
+   0x0000000000400a07 <+167>:	mov    rdi,rax
+   0x0000000000400a0a <+170>:	call   0x400820 _ZNSolsEPFRSoS_E@plt
+
+28	
+29	    char* x = "1234";
+   0x0000000000400a0f <+175>:	mov    QWORD PTR [rbp-0x8],0x400c11
+
+30	    char* y = "2345";
+   0x0000000000400a17 <+183>:	mov    QWORD PTR [rbp-0x10],0x400c16
+
+31	    std::cout << max(x, y) << std::endl;
+   0x0000000000400a1f <+191>:	mov    rdx,QWORD PTR [rbp-0x10]
+   0x0000000000400a23 <+195>:	mov    rax,QWORD PTR [rbp-0x8]
+   0x0000000000400a27 <+199>:	mov    rsi,rdx
+   0x0000000000400a2a <+202>:	mov    rdi,rax
+   0x0000000000400a2d <+205>:	call   0x40092d char* max<char*>(char*, char*)
+
+   0x0000000000400a32 <+210>:	mov    rsi,rax
+   0x0000000000400a35 <+213>:	mov    edi,0x602080
+   0x0000000000400a3a <+218>:	call   0x400800 _ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc@plt
+
+   0x0000000000400a3f <+223>:	mov    esi,0x400830
+   0x0000000000400a44 <+228>:	mov    rdi,rax
+   0x0000000000400a47 <+231>:	call   0x400820 _ZNSolsEPFRSoS_E@plt
+
+
+32	
+33	    std::cout << max(10, 12.8) << std::endl;
+=> 0x0000000000400a4c <+236>:	movabs rax,0x402999999999999a
+   0x0000000000400a56 <+246>:	mov    QWORD PTR [rbp-0x18],rax
+   0x0000000000400a5a <+250>:	movsd  xmm0,QWORD PTR [rbp-0x18]
+   0x0000000000400a5f <+255>:	mov    edi,0xa
+   0x0000000000400a64 <+260>:	call   0x400b49 int max<int, double>(int, double)
+
+   0x0000000000400a69 <+265>:	mov    esi,eax
+   0x0000000000400a6b <+267>:	mov    edi,0x602080
+   0x0000000000400a70 <+272>:	call   0x400790 _ZNSolsEi@plt
+
+   0x0000000000400a75 <+277>:	mov    esi,0x400830
+   0x0000000000400a7a <+282>:	mov    rdi,rax
+   0x0000000000400a7d <+285>:	call   0x400820 _ZNSolsEPFRSoS_E@plt
+
+
+34	    return 0;
+   0x0000000000400a82 <+290>:	mov    eax,0x0
+
+35	}
+   0x0000000000400a87 <+295>:	leave  
+   0x0000000000400a88 <+296>:	ret    
+
+End of assembler dump.
+```
+
+泛型的优点是在编译期完成的，可以减少运行期的时间。  
+```
+#include <iostream>
+using namespace std;
+// 1+2+3...+100 ==> n*(n+1)/2 
+
+template<int n>
+struct Sum
+{
+	enum Value {N = Sum<n-1>::N+n}; // Sum(n) = Sum(n-1)+n
+};
+template<>
+struct Sum<1>
+{
+	enum Value {N = 1};    // n=1
+};
+
+int main()
+{
+	cout << Sum<100>::N << endl;
+
+    return 0;
+}
+```
+
+汇编实现
+```c++
+Dump of assembler code for function main():
+17	{
+   0x00000000004007ad <+0>:	push   rbp
+   0x00000000004007ae <+1>:	mov    rbp,rsp
+
+18		cout << Sum<100>::N << endl;
+=> 0x00000000004007b1 <+4>:	mov    esi,0x13ba    //编译时就已经计算完毕了， 5050  
+   0x00000000004007b6 <+9>:	mov    edi,0x601060
+   0x00000000004007bb <+14>:	call   0x400640 _ZNSolsEi@plt
+
+   0x00000000004007c0 <+19>:	mov    esi,0x4006b0
+   0x00000000004007c5 <+24>:	mov    rdi,rax
+   0x00000000004007c8 <+27>:	call   0x4006a0 _ZNSolsEPFRSoS_E@plt
+
+19	
+20	    return 0;
+   0x00000000004007cd <+32>:	mov    eax,0x0
+
+21	}
+   0x00000000004007d2 <+37>:	pop    rbp
+   0x00000000004007d3 <+38>:	ret    
+
+End of assembler dump.
+```
+
 ## 进阶编程
+### STL标准模板库(Standard Template Library) 
+
+- STL算法是泛型的(generic), 不与任何特定的数据结构和对象绑定，不必在环境类似的环境下重写代码；    
+- STL算法可以量身定做，并且具有很高的效率；  
+- STL可以进行扩充，你可以编写自己的组件并且能与STL标准的组件进行很好地融合；
+
+> STL六大组件  
+
+![stl标准库](../../res/stl标准库.png)
+<br>
+
+![stl标准库组件之间的关系](../../res/stl-relationship.png)
+
+### 容器  
+容器用于存放数据; STL的容器分为两大类:
+- 序列式容器(Sequence Containers):  
+其中的元素都是可排序的(ordered),STL提供了vector, list, deque等序列式容器,而stack, queue, priority_ queue则是容器适配器;    
+- 关联式容器(Associative Containers):  
+每个数据元素都是由一-个键(key)和值(Value)组成，当元素被插入到容器时，按基键以某种特定规则放入适当位置;常见的STL关联容器如: set, multiset, map, multimap;
+
+### 序列式容器的基本使用  
+```c++
+#include <vector>
+#include <list>
+#include <queue>
+#include <stack>
+#include <map>
+#include <string>
+#include <functional>
+#include <algorithm>
+#include <utility>
+#include <iostream>
+using namespace std;
+
+struct Display
+{
+    void operator()(int i)
+    {
+        cout << i << " ";
+    }
+};
+
+struct Display2
+{
+    void operator()(pair<string, double> info)
+    {
+        cout << info.first << ":  " << info.second << "  ";
+    }
+};
+
+int main()
+{
+    int iArr[] = {1, 2, 3, 4, 5};
+
+    vector<int> iVector(iArr, iArr + 4);
+    list<int> iList(iArr, iArr + 4);
+    deque<int> iDeque(iArr, iArr + 4);
+    queue<int> iQueue(iDeque);                   // 队列 先进先出
+    stack<int> iStack(iDeque);                   // 栈 先进后出
+    priority_queue<int> iPQueue(iArr, iArr + 4); // 优先队列，按优先权
+
+    for_each(iVector.begin(), iVector.end(), Display());
+    cout << endl;
+    for_each(iList.begin(), iList.end(), Display());
+    cout << endl;
+    for_each(iDeque.begin(), iDeque.end(), Display());
+    cout << endl;
+
+    while (!iQueue.empty())
+    {
+        cout << iQueue.front() << " "; // 1  2 3 4
+        iQueue.pop();
+    }
+    cout << endl;
+
+    while (!iStack.empty())
+    {
+        cout << iStack.top() << " "; // 4 3  2  1
+        iStack.pop();
+    }
+    cout << endl;
+
+    while (!iPQueue.empty())
+    {
+        cout << iPQueue.top() << " "; // 4 3 2 1
+        iPQueue.pop();
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
 ## GUI开发
 ## 陷阱与经验
