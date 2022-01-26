@@ -1052,6 +1052,7 @@ int main()
     int* pArr[4] = {&a[0], &a[1], &a[2], &a[3]};  // 指针的数组   T pArr[4]  => T = int* 
     // 输出的是指针的地址 0x7fffffffdcd0  
     cout << "pArr[0]:" << pArr[0] << ",pArr[1]:" << pArr[1] << endl;
+    cout << "*(pArr[0]):" << *(pArr[0]) << ",*(pArr[1):" << *(pArr[1]) << endl;
 
     // 指向int[4]数组的指针  a pointer to an array 
     int (*arrP)[4];    // 数组的指针  T (*pArr)[4] => T = int
@@ -1069,11 +1070,317 @@ int main()
 ```shell
 a数组地址:0x7fffffffdcd0,pA[0]:-2147483648,pA[1]:255
 pArr[0]:0x7fffffffdcd0,pArr[1]:0x7fffffffdcd4
-arrP[0]:0x7fffffffdcd0,arrP[1]:0x7fffffffdce0      // arrP[0] 数组a的地址, arrP[0] 偏移16个字节的地址 
+arrP[0]:0x7fffffffdcd0,arrP[1]:0x7fffffffdce0       
+(*arrP)[0]:-2147483648,(*arrP)[1]:255
+
+a数组地址:0x7fffffffdcd0,pA[0]:-2147483648,pA[1]:255
+pArr[0]:0x7fffffffdcd0,pArr[1]:0x7fffffffdcd4
+*(pArr[0]):-2147483648,*(pArr[1):255                // pArr[0] 是数组的地址, *(pArr[0]) 取值  
+arrP[0]:0x7fffffffdcd0,arrP[1]:0x7fffffffdce0       // arrP[0] 数组a的地址, arrP[0] 偏移16个字节的地址
 (*arrP)[0]:-2147483648,(*arrP)[1]:255
 ```  
 
 > 需要特别注意的是`c/c++`中指针(内存地址)是可以进行运算的，一种方式是`arrP + 1`，另一种方式是`arrP[1]` 含义是相同的  
+
+### const与指针  
+- const pointer  
+- pointer to const 
+
+> 关于const修改部分，看左侧最近的部分，如果左侧没有，则看右侧。  
+> **主要确认修改的部分是`(*p) 指向的内容`还是`(p) 指针`**    
+
+```c++
+#include <iostream>
+#include <string.h>
+using namespace std;
+unsigned int MAX_LEN = 11;
+
+int main()
+{
+    char strHelloworld[] = {"helloworld"};
+    // const修饰谁，谁的内容就不可变，其他的都可变
+    const char *pStr1 = "helloworld";       // 修饰的是(*pStr1) 指向的内容不能修改。 主要用于函数的形参，防止被修改  
+    char *const pStr2 = strHelloworld;      // 修饰的是(pStr2)  指向不能修改
+    const char *const pStr3 = "helloworld"; // 修饰的是(*pStr3)和(pStr3)  指向和指向的内容都不能修改
+
+    pStr1 = strHelloworld; // 指向可以变，指向的内容不能变
+    //pStr2 = strHelloworld;                // pStr2不可改
+    //pStr3 = strHelloworld;                // pStr3不可改
+
+    unsigned int len = strnlen(pStr2, MAX_LEN);
+    cout << len << endl;
+    for (unsigned int index = 0; index < len; ++index)
+    {
+        //pStr1[index] += 1;                               // pStr1里的值不可改
+        pStr2[index] += 1;
+        //pStr3[index] += 1;                               // pStr3里的值不可改
+    }
+
+    char a = 'a';
+    const char *pA = &a;
+
+    // 指针指向的内容不能修改， 但是a的值仍是可以修改的  
+    // *pA = 'b'; // assignment of read-only location ‘* pA’
+    a = 'c';      // (*pA)指向的内容就是变量a的地址，a变量仍然是可以修改的  
+    cout << *pA << endl;
+
+    return 0;
+}
+```
+
+查看内存值
+```shell
+-exec x/16xb &strHelloworld
+0x7fffffffdcd0:	0x68	0x65	0x6c	0x6c	0x6f	0x77	0x6f	0x72
+0x7fffffffdcd8:	0x6c	0x64	0x00	0x00	0x00	0x00	0x00	0x00
+
+-exec x/16xb &pStr1
+0x7fffffffdcf0:	0xd0	0xdc	0xff	0xff	0xff	0x7f	0x00	0x00
+0x7fffffffdcf8:	0x00	0x00	0x00	0x00	0x00	0x00	0x00	0x00
+
+-exec x/16xb &pStr2
+0x7fffffffdce8:	0xd0	0xdc	0xff	0xff	0xff	0x7f	0x00	0x00
+0x7fffffffdcf0:	0xd0	0xdc	0xff	0xff	0xff	0x7f	0x00	0x00
+
+-exec x/16xb &pStr3
+0x7fffffffdce0:	0x81	0x09	0x40	0x00	0x00	0x00	0x00	0x00
+0x7fffffffdce8:	0xd0	0xdc	0xff	0xff	0xff	0x7f	0x00	0x00
+
+-exec x/16cb 0x400981
+0x400981:	104 'h'	101 'e'	108 'l'	108 'l'	111 'o'	119 'w'	111 'o'	114 'r'
+0x400989:	108 'l'	100 'd'	0 '\000'	1 '\001'	27 '\033'	3 '\003'	59 ';'	64 '@'
+```
+
+通过查看内存值可以画出如下关系:  
+
+<br>
+<div align=center>
+    <img src="../../res/const与指针.jpg" width="60%" height="60%" title="队列参数设置"></img>  
+</div>
+<br>
+
+`pStr1`、`pStr2`、`pStr3`变量的地址是连续的，`pStr1`、`pStr2`指向  
+
+
+`const`还是针对于编译器，可以从汇编实现看出，运行时与其他变量无异!  
+- const 是由编译器进行处理，执行类型检查和作用域的检查；
+- define 是由预处理器进行处理，只做简单的文本替换工作而已。
+
+### 二级指针和野指针  
+
+指向指针的指针
+```c++
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int a = 123;
+    int* b = &a;
+    int** c = &b;
+
+    cout << "&a=" << &a << ",b=" << b << ",c=" << c << endl;
+}
+```
+输出结果  
+```
+&a=0x7fffffffdce4,b=0x7fffffffdce4,c=0x7fffffffdcd8
+```
+
+如果一个指针在声明时没有指定初始值，那系统分配的初始值可能是异常数据，最坏的情况是，地址可以访问，导致修改了其他有效数据。  
+
+```
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int *a;  // 分配的地址为 0x400730 ,可能是非法地址  
+    cout << "a=" << a << ",&a=" << &a << endl;
+
+    /*
+    -exec x/16xb 0x400730
+    0x400730 <_start>:	    0x31	0xed	0x49	0x89	0xd1	0x5e	0x48	0x89
+    0x400738 <_start+8>:	0xe2	0x48	0x83	0xe4	0xf0	0x50	0x54	0x49
+    */
+    return 0;
+}
+```
+
+> 指针在不适用的时候要把指针置空(NULL)  
+> 在C++中建议使用nullptr替代NULL，因为在C++中NULL是: #define NULL 0 这样在整型重载的时候可能会有问题。而C++11加入了nullptr，可以保证在任何情况下都代表空指针， 所以比较安全。
+
+```c++
+#include <iostream>
+using namespace std;
+int main()
+{
+    // 指针的指针
+    int a = 123;
+    int *b = &a;
+    int **c = &b;
+
+    // NULL 的使用
+    int *pA = NULL;
+    pA = &a;
+    if (pA != NULL) //  判断NULL指针
+    {
+        cout << (*pA) << endl;
+    }
+    pA = NULL; //  pA不用时，置为NULL
+
+    return 0;
+}
+```
+
+**野指针**  
+- 指向`垃圾`内存的指针， if判断对它没有作用，因为没有置空
+
+一般有三种情况:  
+- 指针变量没有初始化;
+- 已经释放不用的指针没有置NULL, 如`delete`与`free`之后的指针;
+- 指针操作超越了变量的作用范围;  
+
+> 没有初始化的指针，不用或者超出作用范围的指针请把值置为NULL  
+
+
+### 指针的基本操作  
+- `&`和`*`
+- `++`、`--`  
+- 
+
+```c++
+#include <iostream>
+using namespace std;
+int main()
+{
+    char ch = 'a';
+
+    // &操作符
+    //&ch = 97;     // &ch左值不合法
+    char *cp = &ch; // &ch右值
+    //&cp = 97;     // &cp左值不合法
+    char **cpp = &cp; // &cp右值
+
+    // *操作符
+    *cp = 'a';      // *cp左值取变量ch位置
+    char ch2 = *cp; // *cp右值取变量ch存储的值
+    //*cp + 1 = 'a'; //  *cp+1左值不合法的位置
+    ch2 = *cp + 1;   //  *cp+1右值取到的字符做ASCII码+1操作
+    *(cp + 1) = 'a'; //  *(cp+1)左值语法上合法，取ch后面位置
+    ch2 = *(cp + 1); //  *(cp+1)右值语法上合法，取ch后面位置的值
+
+    return 0;
+}
+```
+
+```c++
+int main()
+{
+    char ch = 'a';
+    char *cp = &ch;
+    // ++,--操作符
+    char *cp2 = ++cp;
+    char *cp3 = cp++;
+    char *cp4 = --cp;
+    char *cp5 = cp--;
+
+    // ++ 左值
+    //++cp2 = 97;
+    //cp2++ = 97;
+
+    // *++, ++*
+    *++cp2 = 98;
+    char ch3 = *++cp2;
+    *cp2++ = 98;
+    char ch4 = *cp2++;
+
+    // ++++, ----操作符等
+    int a = 1, b = 2, c, d;
+    //c = a++b;               // error
+    c = a++ + b;
+    //d = a++++b;             // error
+    char ch5 = ++*++cp;
+
+    return 0;
+}
+```
+
+### CPP程序的存储区域划分  
+- (stack)栈区  
+- 常量区  
+- (heap)堆区
+- (text)代码区, 调用函数时使用代码区的地址  
+- (GVAR)全局初始化区
+- (bss)全局未初始化区
+
+```c++
+#include <string.h>
+#include <iostream>
+using namespace std;
+
+int a = 0; //(GVAR)全局初始化区
+int *p1;   //(bss)全局未初始化区
+
+int main() //(text)代码区
+{
+    int b = 1;                //(stack)栈区变量
+    char s[] = "abc";         //(stack)栈区变量
+    int *p2 = NULL;           //(stack)栈区变量
+    char *p3 = "123456";      //123456\0在常量区, p3在(stack)栈区
+    static int c = 0;         //(GVAR)全局(静态)初始化区
+    p1 = new int(10);         //(heap)堆区变量
+    p2 = new int(20);         //(heap)堆区变量
+    char *p4 = new char[7];   //(heap)堆区变量
+    strncpy(p4, "123456", 7); //(text)代码区   strncpy方法名是代码区的地址  
+
+    cout << "b=" << &b << ",s=" << &s << ",p1=" << p1 << ",p2=" << p2 << endl;
+    cout << "&p3=" << &p3 << ",&p4=" << &p4 << ",(void*)p3=" << (void *)p3 << ",(void*)p4=" << (void *)p4 << ",p3=" << p3 << ",p4=" << p4 << endl;
+
+    //(text)代码区
+    if (p1 != NULL)
+    {
+        delete p1;
+        p1 = NULL;
+    }
+    if (p2 != NULL)
+    {
+        delete p2;
+        p2 = NULL;
+    }
+    if (p4 != NULL)
+    {
+        delete[] p4;
+        p4 = NULL;
+    }
+    //(text)代码区
+    return 0; //(text)代码区
+}
+```
+
+输出结果:  
+```shell
+b=0x7fffffffdcd4,s=0x7fffffffdcd0,p1=0x603010,p2=0x603030
+&p3=0x7fffffffdcc8,&p4=0x7fffffffdcc0,(void*)p3=0x400c61,(void*)p4=0x603050,p3=123456,p4=123456
+```
+
+`b`和`s`在同一栈区(0x7fffffff)，`p1`、`p2`、`p4`指向的内存地址在堆区(0x6030)，`p3`指向的内存地址在常量区(0x400c)  
+
+> `p3`指向常量字符串，如何打印字符串的地址呢?  `(void*)p3`
+```
+-exec p p3
+$1 = 0x400c61 "123456"
+
+-exec p p4
+$2 = 0x603050 "123456"
+```
+
+<br>
+<div align=center>
+    <img src="../../res/cpp代码存储区域.png" width="80%" height="80%" title="队列参数设置"></img>  
+</div>
+<br>
+
 
 ## 基础句法
 ## 高级语法
