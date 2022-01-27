@@ -1560,12 +1560,230 @@ int main()
 ![unique_ptr_delete](../../res/unique_ptr_delete.png)  
 
 #### shared_prt 
+- 通过引用计数共享一个对象，为了解决auto_ptr在对象所有权上的局限性    
+- 当引用计数为0时，该对象没有被使用，可以进行析构  
 
+> 循环引用: 相互引用，导致堆里的内存无法正常回收。  
+
+```c++
+#include <iostream>
+#include <memory>
+using namespace std;
+int main()
+{
+    // shared_ptr
+    {
+        //shared_ptr 代表的是共享所有权，即多个 shared_ptr 可以共享同一块内存。
+        auto wA = shared_ptr<int>(new int(20));
+        {
+            auto wA2 = wA;
+            cout << ((wA2.get() != nullptr) ? (*wA2.get()) : -1) << endl; // 20
+            cout << ((wA.get() != nullptr) ? (*wA.get()) : -1) << endl;   // 20
+            cout << wA2.use_count() << endl;                              // 2
+            cout << wA.use_count() << endl;                               // 2
+        }
+        //cout << wA2.use_count() << endl;
+        cout << wA.use_count() << endl;                             // 1
+        cout << ((wA.get() != nullptr) ? (*wA.get()) : -1) << endl; // 20
+                                                                    //shared_ptr 内部是利用引用计数来实现内存的自动管理，每当复制一个 shared_ptr，
+                                                                    //	引用计数会 + 1。当一个 shared_ptr 离开作用域时，引用计数会 - 1。
+                                                                    //	当引用计数为 0 的时候，则 delete 内存。
+    }
+
+    // move 语法
+    auto wAA = std::shared_ptr<int>(new int(30));
+    auto wAA2 = std::move(wAA);                                     // 此时 wAA 等于 nullptr，wAA2.use_count() 等于 1
+    cout << ((wAA.get() != nullptr) ? (*wAA.get()) : -1) << endl;   // -1
+    cout << ((wAA2.get() != nullptr) ? (*wAA2.get()) : -1) << endl; // 30
+    cout << wAA.use_count() << endl;                                // 0
+    cout << wAA2.use_count() << endl;                               // 1
+                                                                    //将 wAA 对象 move 给 wAA2，意味着 wAA 放弃了对内存的所有权和管理，此时 wAA对象等于 nullptr。
+                                                                    //而 wAA2 获得了对象所有权，但因为此时 wAA 已不再持有对象，因此 wAA2 的引用计数为 1。
+
+    return 0;
+}
+```
 
 #### weak_ptr 
+- 被设计与`shared_ptr`共同工作，用一种观察模式工作。  
+- `weak_ptr` 只对 `shared_ptr` 起到引用作用，而不改变引用计数。
 
+```c++
+#include <string>
+#include <iostream>
+#include <memory>
+using namespace std;
 
-### 引用
+struct B;
+struct A
+{
+    shared_ptr<B> pb;
+    ~A()                      // 结构体也有构造及析构，也可以有修饰符.  public: private 
+    {
+        cout << "~A()" << endl;
+    }
+};
+struct B
+{
+    shared_ptr<A> pa;
+    ~B()
+    {
+        cout << "~B()" << endl;
+    }
+};
+
+// pa 和 pb 存在着循环引用，根据 shared_ptr 引用计数的原理，pa 和 pb 都无法被正常的释放。
+// weak_ptr 是为了解决 shared_ptr 双向引用的问题。
+struct BW;
+struct AW
+{
+    shared_ptr<BW> pb;
+    ~AW()
+    {
+        cout << "~AW()" << endl;
+    }
+};
+struct BW
+{
+    weak_ptr<AW> pa;
+    ~BW()
+    {
+        cout << "~BW()" << endl;
+    }
+};
+
+void Test()
+{
+    cout << "Test shared_ptr and shared_ptr:  " << endl;
+    shared_ptr<A> tA(new A()); // 1
+    shared_ptr<B> tB(new B()); // 1
+    cout << tA.use_count() << endl;
+    cout << tB.use_count() << endl;
+    tA->pb = tB;
+    tB->pa = tA;
+    cout << tA.use_count() << endl; // 2
+    cout << tB.use_count() << endl; // 2
+}
+void Test2()
+{
+    cout << "Test weak_ptr and shared_ptr:  " << endl;
+    shared_ptr<AW> tA(new AW());
+    shared_ptr<BW> tB(new BW());
+    cout << tA.use_count() << endl; // 1
+    cout << tB.use_count() << endl; // 1
+    tA->pb = tB;
+    tB->pa = tA;
+    cout << tA.use_count() << endl; // 1
+    cout << tB.use_count() << endl; // 2
+}
+
+int main()
+{
+    Test();
+    Test2();
+
+    return 0;
+}
+```
+
+输出结果:  
+```
+Test shared_ptr and shared_ptr:  
+1
+1
+2
+2
+Test weak_ptr and shared_ptr:  
+1
+1
+1
+2
+~AW()
+~BW()
+```
+
+从结果显示，A/B结构体都没有释放，因为循环引用的问题；AW/BW结构体释放了，因为一个强引用一个弱引用。  
+
+智能指针引用:  
+
+<br>
+<div align=center>
+    <img src="../../res/智能指针的分类.jpg" width="80%" height="80%" title="智能指针的分类"></img>  
+</div>
+<br>
+
+### 引用(指向变量地址的指针)   
+- 一种特殊的指针，不允许修改的指针(不允许运算)。相当于变量的别名(指向原变量的地址)  `int& rx = x`  
+
+```
+26	
+27	    int x = 5;
+   0x0000000000400e33 <+109>:	mov    DWORD PTR [rbp-0x54],0x5
+
+28	    int& rx = x;
+=> 0x0000000000400e3a <+116>:	lea    rax,[rbp-0x54]
+   0x0000000000400e3e <+120>:	mov    QWORD PTR [rbp-0x28],rax
+```  
+
+从汇编实现中可以看出，引用就是原始变量的`副本`，存储原始指向变量的地址(也相当于`指针`)  
+
+```c++
+#include <iostream>
+#include <assert.h>
+using namespace std;
+
+// 编写一个函数，输入两个int型变量a,b
+// 实现在函数内部将a,b的值进行交换。
+void swap(int &a, int &b)
+{
+    int tmp = a;
+    a = b;
+    b = tmp;
+}
+void swap2(int *a, int *b)
+{
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+int main()
+{
+    //int x = 1, x2 = 3;
+    //int& rx = x;
+    //rx = 2;
+    //cout << x << endl;
+    //cout << rx << endl;
+    //rx = x2;
+    //cout << x << endl;
+    //cout << rx << endl;
+
+    // 交换变量的测试
+    int a = 3, b = 4;
+    swap(a, b);
+    assert(a == 4 && b == 3);
+
+    a = 3, b = 4;
+    swap2(&a, &b);
+    assert(a == 4 && b == 3);
+
+    return 0;
+}
+```
+
+使用指针的坑: 空指针、野指针、不知不觉修改了指针的值，却继续使用。  
+引用则不存在空引用，必须初始化，一个引用永远指向它初始化的那个对象。 
+
+> 有了指针为什么还要有引用? 比如Java只有引用。  Bjarne Stroustrup的解释是:`为了支持函数运算符重载`  
+> 有了引用为什么还需要指针? Bjarne Stroustrup 的解释是 `为了兼容C语言`  
+
+> ? 目前业界很多大型工程中有很多思想，都尽可能避免使用裸指针。比如STL中的智能指针，微软的COM等等  
+
+函数传递参数类型的说明:  
+- 对于内置基础类型(int、double)而言，在函数中传递时`pass by value`更高效  
+- 在OO面向对象中自定义类型而言，在函数中传递时`pass by reference to const`更高效 
+
+> 本质都是传值，一种是存储的内容，一种是存储内容的地址  
 
 ## 基础句法
 ## 高级语法
