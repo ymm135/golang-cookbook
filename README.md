@@ -40,8 +40,8 @@
 ### [gin中间件](./md/web/gin/gin-middleware.md)    
 
 ## gorm  
-### [gorm基础]()
-### [gorm实现原理]()  
+### [gorm基础](md/web/gorm/base-gorm.md)  
+### [gorm实现原理](md/web/gorm/flow-gorm.md)  
 
 # 中间件
 ## nginx
