@@ -1155,7 +1155,7 @@ int main()
 
 <br>
 <div align=center>
-    <img src="../../res/const与指针.jpg" width="60%" height="60%" title="队列参数设置"></img>  
+    <img src="../../res/const与指针.jpg" width="60%" height="60%" title="const与指针"></img>  
 </div>
 <br>
 
@@ -1377,10 +1377,195 @@ $2 = 0x603050 "123456"
 
 <br>
 <div align=center>
-    <img src="../../res/cpp代码存储区域.png" width="80%" height="80%" title="队列参数设置"></img>  
+    <img src="../../res/cpp代码存储区域.png" width="80%" height="80%" title="cpp代码存储区域"></img>  
 </div>
 <br>
 
+> 栈空间的地址是从高到底的，内存的申请及释放由系统管理；堆空间的地址是从低到高的，由程序员管理；  
+
+
+<br>
+<div align=center>
+    <img src="../../res/栈与堆的对比.png" width="80%" height="80%" title="栈与堆的对比"></img>  
+</div>
+<br>
+
+> 栈区的大小在编译时根据变量的个数及大小确定了，申请堆区的大小在编译时确定  
+> 
+> 
+> <br>
+<div align=center>
+    <img src="../../res/静态区存储.png" width="80%" height="80%" title="静态区存储"></img>  
+</div>
+<br>
+
+### RAII 资源获取即初始化（Resource Acquisition Is Initialization）
+
+> [RAII要求](https://zh.wikipedia.org/wiki/RAII) ,资源的有效期与持有资源的对象的生命期严格绑定，即由对象的构造函数完成资源的分配（获取），同时由析构函数完成资源的释放。在这种要求下，只要对象能正确地析构，就不会出现资源泄露问题。    
+> 虽然RAII和finally都能保证资源管理时的异常安全，但相对来说，使用RAII的代码相对更加简洁。 如比雅尼·斯特劳斯特鲁普所说，“在真实环境中，调用资源释放代码的次数远多于资源类型的个数，所以相对于使用finally来说，使用RAII能减少代码量。”  
+
+### 智能指针
+比指针更安全的解决方案:  
+- 使用更安全的指针----**智能指针**  
+- 不使用指针，使用更安全的方式----**引用**
+
+> 除非特殊场景，一般不建议自己对内存进行`new`和`delete`  
+
+#### auto_prt (c++11标准已经废弃，c++17已经正式删除)
+
+> `auto_prt`是一个类，在构造函数中申请内存，在析构函数中释放内存。(RAII)  
+
+```
+/**
+       *  @brief  An %auto_ptr is usually constructed from a raw pointer.
+       *  @param  __p  A pointer (defaults to NULL).
+       *
+       *  This object now @e owns the object pointed to by @a __p.
+       */
+      explicit
+      auto_ptr(element_type* __p = 0) throw() : _M_ptr(__p) { }
+      
+/**
+       *  When the %auto_ptr goes out of scope, the object it owns is
+       *  deleted.  If it no longer owns anything (i.e., @c get() is
+       *  @c NULL), then this has no effect.
+       *
+       *  The C++ standard says there is supposed to be an empty throw
+       *  specification here, but omitting it is standard conforming.  Its
+       *  presence can be detected only if _Tp::~_Tp() throws, but this is
+       *  prohibited.  [17.4.3.6]/2
+       */
+      ~auto_ptr() { delete _M_ptr; }
+```
+
+示例代码:  
+```c++
+#include <string>
+#include <iostream>
+#include <memory>
+using namespace std;
+int main()
+{
+    { // 确定auto_ptr失效的范围
+        // 对int使用
+        auto_ptr<int> pI(new int(10));  // 必须从堆区申请，参数是个指针，不是数值 
+        cout << *pI << endl; // 10
+
+        // auto_ptr	C++ 17中移除	拥有严格对象所有权语义的智能指针
+        // auto_ptr原理：在拷贝 / 赋值过程中，直接剥夺原对象对内存的控制权，转交给新对象，
+        // 然后再将原对象指针置为nullptr（早期：NULL）。这种做法也叫管理权转移。
+        // 他的缺点不言而喻，当我们再次去访问原对象时，程序就会报错，所以auto_ptr可以说实现的不好，
+        // 很多企业在其库内也是要求不准使用auto_ptr。
+        auto_ptr<string> languages[5] = {
+            auto_ptr<string>(new string("C")),
+            auto_ptr<string>(new string("Java")),
+            auto_ptr<string>(new string("C++")),
+            auto_ptr<string>(new string("Python")),
+            auto_ptr<string>(new string("Rust"))};
+        cout << "There are some computer languages here first time: \n";
+        for (int i = 0; i < 5; ++i)
+        {
+            cout << *languages[i] << endl;
+        }
+        auto_ptr<string> pC;
+        pC = languages[2]; // languges[2] loses ownership. 将所有权从languges[2]转让给pC，
+        //此时languges[2]不再引用该字符串从而变成空指针
+        cout << "There are some computer languages here second time: \n";
+        for (int i = 0; i < 2; ++i)
+        {
+            cout << *languages[i] << endl;
+        }
+        cout << "The winner is " << *pC << endl;
+
+        //cout << "There are some computer languages here third time: \n";
+        //for (int i = 0; i < 5; ++i)
+        //{
+        //	cout << *languages[i] << endl;  // 第三个所有权转让了，languages[i]已经置为null了，会报错  
+        //}
+    }
+    return 0;
+}
+```
+输出结果:  
+```
+10
+There are some computer languages here first time: 
+C
+Java
+C++
+Python
+Rust
+There are some computer languages here second time: 
+C
+Java
+The winner is C++
+```
+
+
+#### unique_ptr
+- 专属所有权，unique_ptr管理内存，只能被一个对象持有，不支持复制和赋值  
+- 移动语义, unique_ptr禁止了拷贝语义，但有时我们也需要转移所有权，于是提供了移动语义，即可以使用std::move进行所有权的转移  
+
+析构函数-释放指针内存:  
+```c++
+    // Destructor.
+    ~unique_ptr() noexcept
+    {
+      auto &__ptr = std::get<0>(_M_t);
+      if (__ptr != nullptr)
+        get_deleter()(__ptr);
+      __ptr = pointer();
+    }
+```  
+
+示例代码
+```c++
+#include <memory>
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    // 在这个范围之外，unique_ptr被释放
+    {
+        auto i = unique_ptr<int>(new int(10));
+        cout << *i << endl;
+    }
+
+    // unique_ptr
+    // auto w = std::make_unique<int>(10);  // 大多数C++编译器支持，centos gcc4.8.2不支持
+    auto w = unique_ptr<int>(new int(10));
+    cout << *(w.get()) << endl; // 10
+    //auto w2 = w; // 编译错误如果想要把 w 复制给 w2, 是不可以的。
+    //  因为复制从语义上来说，两个对象将共享同一块内存。
+
+    // unique_ptr 只支持移动语义, 即如下
+    auto w2 = std::move(w);                                     // w2 获得内存所有权，w 此时等于 nullptr
+    cout << ((w.get() != nullptr) ? (*w.get()) : -1) << endl;   // -1
+    cout << ((w2.get() != nullptr) ? (*w2.get()) : -1) << endl; // 10
+    return 0;
+}
+```
+
+输出结果:  
+```shell
+10
+10
+-1
+10
+```
+
+> unique_ptr内存释放  
+
+![unique_ptr_delete](../../res/unique_ptr_delete.png)  
+
+#### shared_prt 
+
+
+#### weak_ptr 
+
+
+### 引用
 
 ## 基础句法
 ## 高级语法
