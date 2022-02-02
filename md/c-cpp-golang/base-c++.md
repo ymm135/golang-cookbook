@@ -1,5 +1,63 @@
 # c++基础
-[学习课程](https://coding.imooc.com/learn/list/414.html)  
+[学习课程链接](https://coding.imooc.com/learn/list/414.html)  
+
+  - [基础语法](#基础语法)
+    - [c++概况](#c概况)
+    - [编译型语言](#编译型语言)
+    - [数据类型](#数据类型)
+    - [常量与变量](#常量与变量)
+  - [运算符与表达式](#运算符与表达式)
+    - [算数运算](#算数运算)
+    - [关系运算符](#关系运算符)
+    - [逻辑运算符](#逻辑运算符)
+    - [赋值运算符](#赋值运算符)
+    - [位运算符](#位运算符)
+    - [算数优先级](#算数优先级)
+    - [补码](#补码)
+  - [容器](#容器)
+    - [概念](#概念)
+    - [数组](#数组)
+    - [动态数组Vector](#动态数组vector)
+      - [vector的数据结构](#vector的数据结构)
+    - [字符串](#字符串)
+      - [unicode编码](#unicode编码)
+      - [字符串指针](#字符串指针)
+    - [字符串基本操作](#字符串基本操作)
+  - [指针](#指针)
+    - [数组指针和指针数组](#数组指针和指针数组)
+    - [const与指针](#const与指针)
+    - [二级指针和野指针](#二级指针和野指针)
+    - [指针的基本操作](#指针的基本操作)
+    - [CPP程序的存储区域划分](#cpp程序的存储区域划分)
+    - [RAII 资源获取即初始化（Resource Acquisition Is Initialization）](#raii-资源获取即初始化resource-acquisition-is-initialization)
+    - [智能指针](#智能指针)
+      - [auto_prt (c++11标准已经废弃，c++17已经正式删除)](#auto_prt-c11标准已经废弃c17已经正式删除)
+      - [unique_ptr](#unique_ptr)
+      - [shared_prt](#shared_prt)
+      - [weak_ptr](#weak_ptr)
+    - [引用(指向变量地址的指针)](#引用指向变量地址的指针)
+  - [基础句法](#基础句法)
+    - [图灵机和三种基本结构](#图灵机和三种基本结构)
+    - [if与switch对比](#if与switch对比)
+    - [枚举](#枚举)
+    - [结构体和联合体](#结构体和联合体)
+    - [循环语句的比较](#循环语句的比较)
+    - [函数](#函数)
+      - [函数重载(overload)和命名空间](#函数重载overload和命名空间)
+      - [函数指针和指针函数](#函数指针和指针函数)
+      - [函数Hack之栈变化](#函数hack之栈变化)
+      - [内联(inline)函数](#内联inline函数)
+      - [递归及优化](#递归及优化)
+  - [高级语法](#高级语法)
+  - [编程思想](#编程思想)
+    - [泛型编程思想](#泛型编程思想)
+  - [进阶编程](#进阶编程)
+    - [STL标准模板库(Standard Template Library)](#stl标准模板库standard-template-library)
+    - [容器](#容器-1)
+    - [序列式容器的基本使用](#序列式容器的基本使用)
+  - [GUI开发](#gui开发)
+  - [陷阱与经验](#陷阱与经验)
+
 ## 基础语法
 ### c++概况
 - 大型桌面应用 PS/Chrome/Microsoft Office
@@ -1786,6 +1844,939 @@ int main()
 > 本质都是传值，一种是存储的内容，一种是存储内容的地址  
 
 ## 基础句法
+### 图灵机和三种基本结构  
+
+[图灵的基本思想](https://zh.wikipedia.org/wiki/%E5%9B%BE%E7%81%B5%E6%9C%BA) 是用机器来模拟人们用纸笔进行数学运算的过程，他把这样的过程看作下列两种简单的动作：
+- 在纸上写上或擦除某个符号；  
+- 把注意力从纸的一处移动到另一处；  
+
+而在每个阶段，人要决定下一步的动作，依赖于（a）此人当前所关注的纸上某个位置的符号和（b）此人当前思维的状态。  
+
+<br>
+<div align=center>
+    <img src="../../res/三种基本的分支语句.png" width="80%" height="80%" title="智能指针的分类"></img>  
+</div>
+<br>
+
+### if与switch对比 
+
+示例代码
+```c++
+#include <iostream>
+using namespace std;
+
+typedef enum __COLOR
+{
+    RED,
+    GREEN,
+    BLUE,
+    UNKOWN
+} COLOR;
+
+int main()
+{
+    // 多分支条件的if
+    // if, else if, else
+    COLOR color0;
+    color0 = BLUE;
+    int c0 = 0;
+    if (color0 == RED)
+    {
+        c0 += 1;
+    }
+    else if (color0 == GREEN)
+    {
+        c0 += 2;
+    }
+    else if (color0 == BLUE)
+    {
+        c0 += 3;
+    }
+    else
+    {
+        c0 += 0;
+    }
+
+    // 多分支条件的switch
+    // switch,case,default
+    COLOR color1;
+    color1 = GREEN;
+    int c1 = 0;
+    switch (color1)
+    {
+    case RED:
+    {
+        c1 += 1;
+        break;
+    }
+    case GREEN:
+    {
+        c1 += 2;
+        break;
+    }
+    case BLUE:
+    {
+        c1 += 3;
+        break;
+    }
+    default:
+    {
+        c1 += 0;
+        break;
+    }
+    }
+
+    return 0;
+}
+```
+汇编实现
+```c++
+Dump of assembler code for function main():
+13	{
+   0x000000000040064d <+0>:	push   rbp
+   0x000000000040064e <+1>:	mov    rbp,rsp
+
+14	    // 多分支条件的if
+15	    // if, else if, else
+16	    COLOR color0;
+17	    color0 = BLUE;
+   0x0000000000400651 <+4>:	mov    DWORD PTR [rbp-0x4],0x2       // [rbp-0x4]是变量[rbp-0x4]的地址，BLUE是0x2 
+
+18	    int c0 = 0;
+   0x0000000000400658 <+11>:	mov    DWORD PTR [rbp-0x8],0x0
+
+19	    if (color0 == RED)
+   0x000000000040065f <+18>:	cmp    DWORD PTR [rbp-0x4],0x0   // color0与RED进行比较
+   0x0000000000400663 <+22>:	jne    0x40066b <main()+30>      // 如果不相等就跳转到0x40066b
+
+20	    {
+21	        c0 += 1;
+   0x0000000000400665 <+24>:	add    DWORD PTR [rbp-0x8],0x1   // 如果color0与RED相等就执行
+   0x0000000000400669 <+28>:	jmp    0x400681 <main()+52>      // 执行完成后跳转到0x400681，也就是跳出判断  
+
+22	    }
+23	    else if (color0 == GREEN)
+   0x000000000040066b <+30>:	cmp    DWORD PTR [rbp-0x4],0x1
+   0x000000000040066f <+34>:	jne    0x400677 <main()+42>
+
+24	    {
+25	        c0 += 2;
+   0x0000000000400671 <+36>:	add    DWORD PTR [rbp-0x8],0x2
+   0x0000000000400675 <+40>:	jmp    0x400681 <main()+52>
+
+26	    }
+27	    else if (color0 == BLUE)
+   0x0000000000400677 <+42>:	cmp    DWORD PTR [rbp-0x4],0x2
+   0x000000000040067b <+46>:	jne    0x400681 <main()+52>
+
+28	    {
+29	        c0 += 3;
+   0x000000000040067d <+48>:	add    DWORD PTR [rbp-0x8],0x3
+
+30	    }
+31	    else
+32	    {
+33	        c0 += 0;
+34	    }
+35	
+36	    // 多分支条件的switch
+37	    // switch,case,default
+38	    COLOR color1;
+39	    color1 = GREEN;
+   0x0000000000400681 <+52>:	mov    DWORD PTR [rbp-0xc],0x1    //[rbp-0xc]是变量color1 
+
+40	    int c1 = 0;
+   0x0000000000400688 <+59>:	mov    DWORD PTR [rbp-0x10],0x0
+
+41	    switch (color1)
+   0x000000000040068f <+66>:	mov    eax,DWORD PTR [rbp-0xc]  // 先把变量color1的值加载到寄存器eax  
+   0x0000000000400692 <+69>:	cmp    eax,0x1                  // eax和0x1(GREEN)比较
+   0x0000000000400695 <+72>:	je     0x4006a8 <main()+91>     // 如果eax等于0x1，就跳转到case GREEN:
+   0x0000000000400697 <+74>:	cmp    eax,0x2
+   0x000000000040069a <+77>:	je     0x4006ae <main()+97>
+   0x000000000040069c <+79>:	test   eax,eax
+   0x000000000040069e <+81>:	je     0x4006a2 <main()+85>
+
+42	    {
+43	    case RED:
+44	    {
+45	        c1 += 1;
+   0x00000000004006a2 <+85>:	add    DWORD PTR [rbp-0x10],0x1
+
+46	        break;
+   0x00000000004006a6 <+89>:	jmp    0x4006b3 <main()+102>
+
+47	    }
+48	    case GREEN:
+49	    {
+50	        c1 += 2;
+   0x00000000004006a8 <+91>:	add    DWORD PTR [rbp-0x10],0x2
+
+51	        break;
+   0x00000000004006ac <+95>:	jmp    0x4006b3 <main()+102>
+
+52	    }
+53	    case BLUE:
+54	    {
+55	        c1 += 3;
+   0x00000000004006ae <+97>:	add    DWORD PTR [rbp-0x10],0x3
+
+56	        break;
+   0x00000000004006b2 <+101>:	nop
+
+57	    }
+58	    default:
+59	    {
+60	        c1 += 0;
+61	        break;
+   0x00000000004006a0 <+83>:	jmp    0x4006b3 <main()+102>
+
+62	    }
+63	    }
+64	
+65	    return 0;
+=> 0x00000000004006b3 <+102>:	mov    eax,0x0
+
+66	}
+   0x00000000004006b8 <+107>:	pop    rbp
+   0x00000000004006b9 <+108>:	ret    
+
+End of assembler dump.
+```  
+
+从汇编实现中可以看出，if语句有嵌套关系，很像树结构，而switch语句就像表结构，首先和表里所有的元素进行对比，最终只跳转一次。  
+
+![if与switch对比](../../res/if与switch对比.jpg)  
+
+> switch语句如果没有找到对应的值，所有的情况也都是要遍历一次。  
+
+### 枚举  
+
+示例代码
+```c++
+#include <iostream>
+using namespace std;
+int main()
+{
+    enum wT
+    {
+        Monday,
+        Tuesday,
+        Wednesday,
+        Thursday,
+        Friday,
+        Saturday,
+        Sunday
+    }; // 声明wT类型
+    wT weekday;
+    weekday = Monday;
+    weekday = Tuesday;
+    //weekday = 1;             // 不能直接给int值，只能赋值成wT定义好的类型值
+    cout << weekday << endl;
+    //Monday = 0;             // 类型值不能做左值
+    int a = Wednesday;        // 枚举类型可以复制给非枚举变量  
+    cout << a << endl;
+
+    return 0;
+}
+```
+汇编实现
+```c++
+-exec disass /m
+Dump of assembler code for function main():
+4	{
+   0x00000000004007ad <+0>:	push   rbp
+   0x00000000004007ae <+1>:	mov    rbp,rsp
+   0x00000000004007b1 <+4>:	sub    rsp,0x10
+
+5	    enum wT
+6	    {
+7	        Monday,
+8	        Tuesday,
+9	        Wednesday,
+10	        Thursday,
+11	        Friday,
+12	        Saturday,
+13	        Sunday
+14	    }; // 声明wT类型
+15	    wT weekday;
+16	    weekday = Monday;
+   0x00000000004007b5 <+8>:	mov    DWORD PTR [rbp-0x4],0x0     // 枚举声明时没有什么汇编代码，只有赋值时才有
+                                                               // 说明枚举在编译时已经替换成数值了.  
+17	    weekday = Tuesday;
+   0x00000000004007bc <+15>:	mov    DWORD PTR [rbp-0x4],0x1
+
+18	    //weekday = 1;             // 不能直接给int值，只能赋值成wT定义好的类型值
+19	    cout << weekday << endl;
+   0x00000000004007c3 <+22>:	mov    eax,DWORD PTR [rbp-0x4]
+   0x00000000004007c6 <+25>:	mov    esi,eax
+   0x00000000004007c8 <+27>:	mov    edi,0x601060
+   0x00000000004007cd <+32>:	call   0x400640 <_ZNSolsEi@plt>
+   0x00000000004007d2 <+37>:	mov    esi,0x4006b0
+   0x00000000004007d7 <+42>:	mov    rdi,rax
+   0x00000000004007da <+45>:	call   0x4006a0 <_ZNSolsEPFRSoS_E@plt>
+
+20	    //Monday = 0;             // 类型值不能做左值
+21	    int a = Wednesday;        // 枚举类型可以复制给非枚举变量  
+   0x00000000004007df <+50>:	mov    DWORD PTR [rbp-0x8],0x2
+
+22	    cout << a << endl;
+   0x00000000004007e6 <+57>:	mov    eax,DWORD PTR [rbp-0x8]
+   0x00000000004007e9 <+60>:	mov    esi,eax
+   0x00000000004007eb <+62>:	mov    edi,0x601060
+   0x00000000004007f0 <+67>:	call   0x400640 <_ZNSolsEi@plt>
+   0x00000000004007f5 <+72>:	mov    esi,0x4006b0
+   0x00000000004007fa <+77>:	mov    rdi,rax
+   0x00000000004007fd <+80>:	call   0x4006a0 <_ZNSolsEPFRSoS_E@plt>
+
+23	
+24	    return 0;
+=> 0x0000000000400802 <+85>:	mov    eax,0x0
+
+25	}
+   0x0000000000400807 <+90>:	leave  
+   0x0000000000400808 <+91>:	ret    
+
+End of assembler dump.
+```
+
+从枚举的汇编实现可以看出，枚举在定义是并没有分配内存(没有像数组那样的连续内存)，个人认为枚举应该是编译时替换。  
+
+> 尽量使用const，enum，inline替换#define（**以编译器替换预处理器**）  
+
+### 结构体和联合体  
+
+示例代码
+```c++
+#include <string.h>
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    union Score
+    {
+        double ds;  // 8
+        char level; // 1
+    };
+    struct Student
+    {
+        char name[6]; 
+        int age;      
+        Score s;      
+    };
+    // cout << sizeof(Score) << endl; // 8
+
+    Student s1;
+    strcpy(s1.name, "lili");
+    s1.age = 16;
+    s1.s.ds = 95.5;
+    s1.s.level = 'A';
+
+    // cout << sizeof(Student) << endl; // 24不是18
+
+    return 0;
+}
+```
+输出结果为`Score`占用8个字节，`Student`占用24个字节  
+
+汇编实现:  
+```c++
+Dump of assembler code for function main():
+6	{
+   0x000000000040064d <+0>:	push   rbp
+   0x000000000040064e <+1>:	mov    rbp,rsp
+
+7	    union Score
+8	    {
+9	        double ds;  // 8
+10	        char level; // 1
+11	    };
+12	    struct Student
+13	    {
+14	        char name[6]; 
+15	        int age;      
+16	        Score s;      
+17	    };
+18	    // cout << sizeof(Score) << endl; // 8
+19	
+20	    Student s1;
+21	    strcpy(s1.name, "lili");
+   0x0000000000400651 <+4>:	lea    rax,[rbp-0x20]                 // s1变量的地址为[rbp-0x20] 
+   0x0000000000400655 <+8>:	mov    DWORD PTR [rax],0x696c696c     
+   0x000000000040065b <+14>:	mov    BYTE PTR [rax+0x4],0x0     // 存储name是偏移了4个字节,相当于[rax-0x1b]
+
+22	    s1.age = 16;
+   0x000000000040065f <+18>:	mov    DWORD PTR [rbp-0x18],0x10  // age占用的地址为[rbp-0x18] 
+
+23	    s1.s.ds = 95.5;
+   0x0000000000400666 <+25>:	movabs rax,0x4057e00000000000  
+   0x0000000000400670 <+35>:	mov    QWORD PTR [rbp-0x10],rax   // Score占用的地址为[rbp-0x10]  
+
+24	    s1.s.level = 'A';
+   0x0000000000400674 <+39>:	mov    BYTE PTR [rbp-0x10],0x41
+
+25	
+26	    // cout << sizeof(Student) << endl; // 24不是18
+27	
+28	    return 0;
+=> 0x0000000000400678 <+43>:	mov    eax,0x0
+
+29	}
+   0x000000000040067d <+48>:	pop    rbp
+   0x000000000040067e <+49>:	ret    
+
+End of assembler dump.
+```
+
+从汇编实现可以看出，`Student`结构体每个元素占用8个字节，一共24个字节?  
+
+<br>
+<div align=center>
+    <img src="../../res/结构体和共用体内存布局.jpg" width="60%" height="60%" title="结构体和共用体内存布局"></img>  
+</div>
+<br>
+
+通过gdb查看内存分布:
+
+<br>
+<div align=center>
+    <img src="../../res/结构体与共用体内存分布.png" width="80%" height="80%" title="结构体与共用体内存分布.png"></img>  
+</div>
+<br>
+
+结构体中内存布局:  
+<br>
+<div align=center>
+    <img src="../../res/结构体内存布局.png" width="80%" height="80%" title="结构体内存布局.png"></img>  
+</div>
+<br>
+
+> 修改内存布局方式: vc++ `#pragma pack(n)` g++ `__attribute_(aligned(n))`  
+
+
+### 循环语句的比较  
+- while 
+- do while 
+- for  
+
+示例代码
+```c++
+#include <iostream>
+using namespace std;
+
+int main()
+{   // TODO: 1+2+3+4...+100
+    // while语句
+    int sum = 0;
+    int index = 1;
+    while (index <= 100)
+    {
+        sum += index;
+        index += 1;
+    }
+
+    // for语句
+    //index = 1;
+    sum = 0;
+    for (index = 1; index <= 100; ++index)
+    {
+        sum += index;
+    }
+
+    // do-while语句
+    sum = 0;
+    index = 1;
+    do
+    {
+        sum += index;
+        index += 1;
+    } while (index <= 100);
+
+    return 0;
+}
+```
+
+汇编实现:
+```c++
+-exec disass /m
+Dump of assembler code for function main():
+5  {   // TODO: 1+2+3+4...+100
+   0x000000000040064d <+0>:   push   rbp
+   0x000000000040064e <+1>:   mov    rbp,rsp
+
+6      // while语句
+7      int sum = 0;
+   0x0000000000400651 <+4>:   mov    DWORD PTR [rbp-0x4],0x0
+
+8      int index = 1;
+   0x0000000000400658 <+11>:  mov    DWORD PTR [rbp-0x8],0x1
+
+9      while (index <= 100)
+   0x000000000040065f <+18>:  jmp    0x40066b <main()+30>
+   0x000000000040066b <+30>:  cmp    DWORD PTR [rbp-0x8],0x64    // index与100比较
+   0x000000000040066f <+34>:  jle    0x400661 <main()+20>        // 如果index小于等于100 跳转到0x400661
+                                                                 // 如果不满足条件，顺序执行，从<+34>跳转到<+36>
+10     {
+11         sum += index;
+   0x0000000000400661 <+20>:  mov    eax,DWORD PTR [rbp-0x8]
+   0x0000000000400664 <+23>:  add    DWORD PTR [rbp-0x4],eax
+
+12         index += 1;
+   0x0000000000400667 <+26>:  add    DWORD PTR [rbp-0x8],0x1
+
+13     }
+14 
+15     // for语句
+16     //index = 1;
+17     sum = 0;
+   0x0000000000400671 <+36>:  mov    DWORD PTR [rbp-0x4],0x0
+
+18     for (index = 1; index <= 100; ++index)
+   0x0000000000400678 <+43>:  mov    DWORD PTR [rbp-0x8],0x1     // index = 1  
+   0x000000000040067f <+50>:  jmp    0x40068b <main()+62>
+   0x0000000000400687 <+58>:  add    DWORD PTR [rbp-0x8],0x1     // index += 1
+   0x000000000040068b <+62>:  cmp    DWORD PTR [rbp-0x8],0x64    // index 与 100(0x64) 比较
+   0x000000000040068f <+66>:  jle    0x400681 <main()+52>        // 如果 index <= 100 则跳转到0x400681
+                                                                 // 如果不满足条件，则从<+66>跳转到<+68>
+19     {
+20         sum += index;
+   0x0000000000400681 <+52>:  mov    eax,DWORD PTR [rbp-0x8]
+   0x0000000000400684 <+55>:  add    DWORD PTR [rbp-0x4],eax
+
+21     }
+22 
+23     // do-while语句
+24     sum = 0;
+   0x0000000000400691 <+68>:  mov    DWORD PTR [rbp-0x4],0x0
+
+25     index = 1;
+   0x0000000000400698 <+75>:  mov    DWORD PTR [rbp-0x8],0x1     // 执行该代码之后，执行<+82>，也就是do while循环体
+
+26     do
+   0x00000000004006a9 <+92>:  cmp    DWORD PTR [rbp-0x8],0x64    // index 与 100(0x64) 比较  
+   0x00000000004006ad <+96>:  jle    0x40069f <main()+82>        // 如果 index <= 100 则跳转到 0x40069f
+
+27     {
+28         sum += index;
+   0x000000000040069f <+82>:  mov    eax,DWORD PTR [rbp-0x8]
+   0x00000000004006a2 <+85>:  add    DWORD PTR [rbp-0x4],eax
+
+29         index += 1;
+   0x00000000004006a5 <+88>:  add    DWORD PTR [rbp-0x8],0x1
+
+30     } while (index <= 100);
+31 
+32     return 0;
+=> 0x00000000004006af <+98>:  mov    eax,0x0
+
+33 }
+   0x00000000004006b4 <+103>: pop    rbp
+   0x00000000004006b5 <+104>: ret    
+
+End of assembler dump.
+```
+
+> gdb查看汇编指令`disass`,如果增加`/m`参数，会按照代码顺序显示汇编，这里的`do while`循环先显示do while的汇编实现，然后再是循环体，但是代码地址不一样，do while的代码要晚于循环体的执行，如果想按照循序排列，可以去掉`/m`参数  
+
+```
+    // do-while语句
+    sum = 0;
+    index = 1;
+    do
+    {
+        sum += index;
+        index += 1;
+    } while (index <= 100);
+
+   0x0000000000400691 <+68>:	mov    DWORD PTR [rbp-0x4],0x0   // sum = 0;
+   0x0000000000400698 <+75>:	mov    DWORD PTR [rbp-0x8],0x1   // index = 1;
+   0x000000000040069f <+82>:	mov    eax,DWORD PTR [rbp-0x8]    
+   0x00000000004006a2 <+85>:	add    DWORD PTR [rbp-0x4],eax   // sum += index;
+   0x00000000004006a5 <+88>:	add    DWORD PTR [rbp-0x8],0x1   // index += 1;
+   0x00000000004006a9 <+92>:	cmp    DWORD PTR [rbp-0x8],0x64  // index <= 100
+   0x00000000004006ad <+96>:	jle    0x40069f <main()+82>
+```
+
+### 函数  
+- 将一段逻辑封装起来，便于复用!  
+- 函数名及参数列表一起构成了 **函数签名**  
+
+#### 函数重载(overload)和命名空间    
+- 函数重载后的`函数签名`不一样  
+
+```
+#include <iostream>
+
+int test(int a)
+{
+    return a;
+}
+
+int test(double a)
+{
+    return int(a);
+}
+
+int test(int a, double b)
+{
+    return a + b;
+}
+
+namespace quickzhao
+{
+    int test(int a)
+    {
+        return a + 1;
+    }
+}
+
+int main()
+{   // 函数重载后的函数签名不一样的
+    test(1);             // _Z4testi
+    test(1.0);           // _Z4testd 
+    test(1,2.0);         // _Z4testid
+
+    // 命名空间  quickzhao 
+    quickzhao::test(3);  // _ZN9quickzhao4testEi
+    return 0;
+}
+```
+
+#### 函数指针和指针函数
+- int (*p)(int) 函数指针  指向一个函数的指针
+- int* p(int) 指针函数  返回值为指针的函数  
+
+函数指针可以作为 **回调函数**  
+
+```c++
+#include <iostream>
+using namespace std;
+int MaxValue(int x, int y)
+{
+	return (x > y) ? x : y;
+}
+int MinValue(int x, int y)
+{
+	return (x < y) ? x : y;
+}
+int Add(int x, int y)
+{
+	return x+y;
+}
+bool ProcessNum(int x, int y, int(*p)(int a, int b))
+{
+	cout << p(x, y) << endl;
+	return true;
+}
+
+int main()
+{   
+	int x = 10, y = 20;
+	cout << ProcessNum(x, y, MaxValue) << endl;
+	cout << ProcessNum(x, y, MinValue) << endl;
+	cout << ProcessNum(x, y, Add) << endl;
+
+    return 0;
+}
+```
+
+#### 函数Hack之栈变化  
+
+
+#### 内联(inline)函数  
+- 编译器优化，通过空间换时间(较少函数调用`call`、函数栈的操作)  
+- 如果一个函数是内联函数，那么在编译期间把函数的**副本**放置在每个调用函数的地方  
+
+> 增加内联不一定会起到作用，编译器会综合考虑，如果需要强制开启，在每个内联函数前增加`__attribute__((always_inline))`  
+
+示例代码:  
+```c++
+#include <iostream>
+
+__attribute__((always_inline))
+inline int MaxValue(int a, int b)
+{
+	return (a > b) ? a : b;
+}
+
+inline int Fib(int n)
+{
+	if (n == 0)
+	{
+		return 0;
+	}
+	else if (n == 1)
+	{
+		return 1;
+	}
+	else
+	{
+		return Fib(n - 1) + Fib(n - 2);    // 递归函数不适合内联 
+	}
+}
+
+int main()
+{
+	int x = 3, y = 4;
+	MaxValue(x, y);
+
+	Fib(5);
+
+    return 0;
+}
+```
+
+汇编实现: 
+```c++
+Dump of assembler code for function main():
+   0x000000000040064d <+0>:	push   rbp
+   0x000000000040064e <+1>:	mov    rbp,rsp
+   0x0000000000400651 <+4>:	sub    rsp,0x10
+   0x0000000000400655 <+8>:	mov    DWORD PTR [rbp-0x4],0x3
+   0x000000000040065c <+15>:	mov    DWORD PTR [rbp-0x8],0x4
+   0x0000000000400663 <+22>:	mov    eax,DWORD PTR [rbp-0x4]
+   0x0000000000400666 <+25>:	mov    DWORD PTR [rbp-0xc],eax
+   0x0000000000400669 <+28>:	mov    eax,DWORD PTR [rbp-0x8]
+   0x000000000040066c <+31>:	mov    DWORD PTR [rbp-0x10],eax   
+   0x000000000040066f <+34>:	mov    eax,DWORD PTR [rbp-0xc]   // MaxValue没有call
+   0x0000000000400672 <+37>:	cmp    eax,DWORD PTR [rbp-0x10]  // 比较a 和 b 的值  
+   0x0000000000400675 <+40>:	mov    edi,0x5
+   0x000000000040067a <+45>:	call   0x4006d8 <_Z3Fibi>        // 调用了Fib函数
+=> 0x000000000040067f <+50>:	mov    eax,0x0
+   0x0000000000400684 <+55>:	leave  
+   0x0000000000400685 <+56>:	ret    
+End of assembler dump.
+```
+
+> 递归函数不适合内联  
+
+#### 递归及优化  
+
+示例代码及优化:  
+```c++
+#include <assert.h>
+
+#include <iostream>
+
+int g_a[1000]; // 全局的数组，记录斐波那契数列的前1000个值
+
+// 斐波那契数列的实现
+// 方法一：递归
+int Fib(int n)
+{
+    if (n == 0)
+    {
+        return 0;
+    }
+    else if (n == 1)
+    {
+        return 1;
+    }
+    else
+    {
+        return Fib(n - 1) + Fib(n - 2);
+    }
+}
+// 尾递归
+int Fib2(int n, int ret0, int ret1)
+{
+    if (n == 0)
+    {
+        return ret0;
+    }
+    else if (n == 1)
+    {
+        return ret1;
+    }
+    return Fib2(n - 1, ret1, ret0 + ret1);
+}
+// 循环
+int Fib3(int n)
+{
+    if (n < 2)
+    {
+        return n;
+    }
+    int n0 = 0, n1 = 1;
+    int temp;
+    for (int i = 2; i <= n; i++)
+    {
+        temp = n0;
+        n0 = n1;
+        n1 = temp + n1;
+    }
+    return n1;
+}
+// 动态规划
+int Fib4(int n)
+{
+    //assert(n >= 0);
+    g_a[0] = 0;
+    g_a[1] = 1;
+    for (int i = 2; i <= n; i++)
+    {
+        if (g_a[i] == 0)
+        {
+            g_a[i] = g_a[i - 1] + g_a[i - 2];
+        }
+    }
+    return g_a[n];
+}
+
+int main()
+{
+    //Fib(10);
+    //std::cout  << Fib2(10, 0, 1);
+    //std::cout << Fib(20) << std::endl;
+    //std::cout << Fib2(20, 0, 1) << std::endl;
+    //std::cout << Fib3(20) << std::endl;
+    //std::cout << Fib4(20) << std::endl;
+    assert(Fib(10) == 55);
+    assert(Fib2(10, 0, 1) == 55);
+    assert(Fib3(10) == 55);
+    assert(Fib4(10) == 55);
+
+    return 0;
+}
+```
+
+- 普通递归  
+
+```c++
+int Fib(int n)
+{
+    if (n == 0)
+    {
+        return 0;
+    }
+    else if (n == 1)
+    {
+        return 1;
+    }
+    else
+    {
+        return Fib(n - 1) + Fib(n - 2);
+    }
+}
+```  
+
+汇编实现: 
+```c++
+1	        return Fib(n - 1) + Fib(n - 2);
+=> 0x00000000004006c3 <+38>:	mov    eax,DWORD PTR [rbp-0x14]
+   0x00000000004006c6 <+41>:	sub    eax,0x1
+   0x00000000004006c9 <+44>:	mov    edi,eax
+   0x00000000004006cb <+46>:	call   0x40069d <_Z3Fibi>
+   0x00000000004006d0 <+51>:	mov    ebx,eax
+   0x00000000004006d2 <+53>:	mov    eax,DWORD PTR [rbp-0x14]
+   0x00000000004006d5 <+56>:	sub    eax,0x2
+   0x00000000004006d8 <+59>:	mov    edi,eax
+   0x00000000004006da <+61>:	call   0x40069d <_Z3Fibi>
+   0x00000000004006df <+66>:	add    eax,ebx
+```
+
+一个函数中调用两次自己，多了两次调用(call),浪费时间及空间  
+
+
+递归调用示例图(树形结构):  
+
+<br>
+<div align=center>
+    <img src="../../res/递归调用.jpg" width="60%" height="60%" title="递归调用"></img>  
+</div>
+<br>
+
+
+- for循环优化  
+
+```c++
+int Fib3(int n)
+{
+    if (n < 2)
+    {
+        return n;
+    }
+    int n0 = 0, n1 = 1;
+    int temp;
+    for (int i = 2; i <= n; i++)
+    {
+        temp = n0;
+        n0 = n1;
+        n1 = temp + n1;
+    }
+    return n1;
+}
+```  
+
+
+- 尾递归 (递归调用在函数最后，之前的变量信息没有必要保存) 
+```c++
+// 尾递归
+int Fib2(int n, int ret0, int ret1)
+{
+    if (n == 0)
+    {
+        return ret0;
+    }
+    else if (n == 1)
+    {
+        return ret1;
+    }
+    return Fib2(n - 1, ret1, ret0 + ret1);
+}
+```
+
+汇编实现,开启编译器优化`-O2`  
+```c++
+-exec disass /m
+Dump of assembler code for function main():
+31	    else if (n == 1)
+   0x0000000000400684 <+36>:	sub    eax,0x1
+   0x000000000040068a <+42>:	jne    0x400680 <main()+32>
+   0x00000000004006cc <+108>:	sub    eax,0x1
+   0x00000000004006d2 <+114>:	jne    0x4006c8 <main()+104>
+
+32	    {
+33	        return ret1;
+34	    }
+35	    return Fib2(n - 1, ret1, ret0 + ret1);
+=> 0x0000000000400682 <+34>:	mov    edx,esi
+   0x0000000000400687 <+39>:	lea    esi,[rcx+rdx*1]
+   0x00000000004006ca <+106>:	mov    edx,esi
+   0x00000000004006cf <+111>:	lea    esi,[rcx+rdx*1]
+```  
+
+可以从汇编实现中看出没有`call`调用，而是在处理完成之后跳转到函数的起点，相当于**循环**  
+
+
+- 动态规划  
+
+> [维基百科](https://zh.wikipedia.org/wiki/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92) 动态规划背后的基本思想非常简单。大致上，若要解一个给定问题，我们需要解其不同部分（即子问题），再根据子问题的解以得出原问题的解。  
+
+```c++
+int g_a[1000]; // 全局的数组，记录斐波那契数列的前1000个值
+
+int Fib4(int n)
+{
+    //assert(n >= 0);
+    g_a[0] = 0;
+    g_a[1] = 1;
+    for (int i = 2; i <= n; i++)
+    {
+        if (g_a[i] == 0)
+        {
+            g_a[i] = g_a[i - 1] + g_a[i - 2];
+        }
+    }
+    return g_a[n];
+}
+```
+
+
+
+
+
 ## 高级语法
 ## 编程思想
 
