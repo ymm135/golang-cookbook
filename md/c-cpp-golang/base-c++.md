@@ -49,6 +49,9 @@
     - [内联(inline)函数](#内联inline函数)
     - [递归及优化](#递归及优化)
 - [高级语法](#高级语法)
+  - [类与结构体比较](#类与结构体比较)
+  - [类的访问权限及友元](#类的访问权限及友元)
+  - [类的运算符重载](#类的运算符重载)
 - [编程思想](#编程思想)
   - [泛型编程思想](#泛型编程思想)
 - [进阶编程](#进阶编程)
@@ -2834,6 +2837,253 @@ int Fib4(int n)
 
 
 ## 高级语法
+### 类与结构体比较    
+- struct默认权限时public  
+- class默认权限时private  
+- 除此之外，二者基本无差别  
+
+下面展示结构体与类的构造析构及成员函数:  
+```c++
+#include <iostream>
+using namespace std;
+
+struct SMan
+{
+private:
+    int age;
+public:
+    SMan() { cout << "Struct Con" << endl; }
+    ~SMan() { cout << "Struct Des" << endl; }
+    void SetAge(int a) { age = a; }
+    int GetAge() { return age; }
+};
+
+class CMan
+{
+private:
+    int age;  // 成员变量
+public:
+    CMan() { cout << "Class Con" << endl; }
+    ~CMan() { cout << "Class Des" << endl; }
+    void SetAge(int a) { age = a; }     // 成员函数  
+    int GetAge() { return age; }
+};
+
+int main()
+{
+    struct SMan sMan;
+    sMan.SetAge(5);
+    cout << sMan.GetAge() << endl;
+
+    CMan cMan;
+    cMan.SetAge(10);
+    cout << cMan.GetAge() << endl;
+
+    return 0;
+}
+```
+
+输出结果为: 
+```
+Struct Con   // 结构体构造函数
+5
+Class Con    // 类构造函数
+10
+Class Des    // 类构造函数
+Struct Des   // 结构体析构函数
+```
+
+[ :bookmark: 返回目录](#目录)
+
+### 类的访问权限及友元  
+> 访问权限的检查是编译时，也就是编译器会在编译时检查数据的访问权限，如果非法访问，无法编译通过!  
+
+非继承关系  
+
+| 类中属性 | public | protected | private |
+| ---- | ---- | ---- | ---- |
+| 内部可见性 | 可见 | 可见 | 可见 |
+| 外部可见性 | 可见 | 不可见 | 不可见 |
+
+> 只有类和**友元函数**可以访问私有成员  
+> 类可以允许其他类或者函数访问它的非公有成员，方法是令其他类或者函数成为它的友元(friend)    
+
+- 友元函数(friend  返回值类型  函数名(参数表);)   
+- 友元类(friend  class  类名;)  
+
+```c++
+class CCar
+{
+private:
+    int price;
+    friend class CDriver;  //声明 CDriver 为友元类
+};
+class CDriver
+{
+public:
+    CCar myCar;
+    void ModifyCar()  //改装汽车
+    {
+        myCar.price += 1000;  //因CDriver是CCar的友元类，故此处可以访问其私有成员
+    }
+};
+int main()
+{
+    return 0;
+}
+```
+
+public继承关系
+| 类中属性 | public | protected | private |
+| ---- | ---- | ---- | ---- |
+| 继承类可见性 | 可见 | 可见 | 不可见 |
+| 外部可见性 | 可见 | 不可见 | 不可见 |
+
+> protected（受保护）成员在派生类（即子类）中是可访问的  
+
+
+[ :bookmark: 返回目录](#目录)  
+
+### 类的运算符重载  
+下面就实现CMan的`<<`和`>>`运算符重载(标准输入与输出的运算符重载)    
+
+```c++
+#include <iostream>
+using namespace std;
+
+class CMan
+{
+private:
+    int age;
+public:
+    CMan() { cout << "Class Con" << endl; }
+    ~CMan() { cout << "Class Des" << endl; }
+    void SetAge(int a) { age = a; }
+    int GetAge() { return age; }
+
+protected:
+    friend ostream &operator<<(ostream& os, const CMan& m);
+    friend istream &operator>>(istream& is, CMan& m);
+};
+
+// 必须声明在类外部
+ostream &operator<<(ostream& os, const CMan& m)
+{
+    os << "age:" << m.age;  // 这里能够访问私有变量，是因为友元(friend)
+    return os;
+}
+
+istream &operator>>(istream& is, CMan& m)
+{
+    is >> m.age;
+    return is;
+}
+
+int main()
+{
+    CMan cMan;
+    cin >> cMan;         // 输入一个参数作为age
+    cout << cMan << endl;// 打印age:30  
+    return 0;
+}
+```
+
+还有其他算数运算符的重载(+、-、*、/、+=、-=、*=、/=、++、--)等  
+
+[ :bookmark: 返回目录](#目录)
+
+### 拷贝构造及深浅拷贝  
+- 通过函数返回临时对象，会触发拷贝构造(不是构造函数)  
+- 通过一个对象创建另一个对象`CMan c(b)`也会触发拷贝构造  
+- 不是绝对的，要看编译器优化，不同的编译器表现形式也不一样(GCC就对拷贝构造有优化)  
+
+> 在函数体中创建的对象变量分配在栈上，函数退出后会销毁，这是系统会触发拷贝构造，创建一个副本。  
+> 这时才理解为什么c++中函数通过指针/引用作为参数获取结果而不是通过函数返回值，省略创建临时对象创建及拷贝  
+
+首先增加`CMan`的`+`号运算符重载:  
+```c++
+#include <iostream>
+using namespace std;
+
+class CMan
+{
+private:
+    int age;
+
+public:
+    CMan() { cout << "Class Con" << endl; }
+    CMan(int age)
+    {
+        this->age = age;
+        cout << "Class Con Age" << endl;
+    }
+    CMan(const CMan &m)
+    {
+        age = m.age;
+        cout << "Class Con Copy" << endl;
+    }
+    ~CMan() { cout << "Class Des" << endl; }
+    void SetAge(int a) { age = a; }
+    int GetAge() { return age; }
+
+    CMan operator+(const CMan &m)
+    {
+        CMan temp;
+        temp.age = age + m.age;
+        return temp;           // 尽量不在函数中返回临时变量，可以直接返回 CMan(age + m.age)  
+    }
+};
+
+int main()
+{
+    CMan man1(4);
+    CMan man2(6);
+
+    // 调用两次构造函数,一次+号，一次=号
+    CMan man3;
+    man3 = man1 + man2;
+    cout << "man3:" << man3.GetAge() << endl;
+
+    // 调用一次构造函数,一次+号
+    CMan man4 = man1 + man2;
+    cout << "man4:" << man4.GetAge() << endl;
+
+    return 0;
+}
+```
+
+如果直接运行，不会调用拷贝构造函数，因为GCC做了优化，需要通过编译选项`-fno-elide-constructors`关闭拷贝构造优化。  
+
+另外可以从汇编实现中看出编译器默认实现了拷贝构造及赋值(=)操作符重载`CMan::operator=(CMan const&)`    
+```c++
+42	    man3 = man1 + man2;
+   0x0000000000400954 <+55>:	lea    rax,[rbp-0x30]
+   0x0000000000400958 <+59>:	lea    rdx,[rbp-0x50]
+   0x000000000040095c <+63>:	lea    rcx,[rbp-0x40]
+   0x0000000000400960 <+67>:	mov    rsi,rcx
+   0x0000000000400963 <+70>:	mov    rdi,rax
+   0x0000000000400966 <+73>:	call   0x400bec CMan::operator+(CMan const&)  //  自己实现的
+
+   0x000000000040096b <+78>:	lea    rdx,[rbp-0x30]
+   0x000000000040096f <+82>:	lea    rax,[rbp-0x60]
+   0x0000000000400973 <+86>:	mov    rsi,rdx
+   0x0000000000400976 <+89>:	mov    rdi,rax
+   0x0000000000400979 <+92>:	call   0x400c66 CMan::operator=(CMan const&)  // 默认实现了=操作符重载 
+
+   0x000000000040097e <+97>:	lea    rax,[rbp-0x30]
+   0x0000000000400982 <+101>:	mov    rdi,rax
+   0x0000000000400985 <+104>:	call   0x400bb2 CMan::~CMan()
+```
+
+>  `CMan man3;man3 = man1 + man2;`和`CMan man4 = man1 + man2;`两种方式在打开和关闭编译器关于拷贝构造函数的优化时，结果不同，具体差异还需要查看编译器优化详情。  
+
+
+**深浅拷贝**  
+浅拷贝相当于拷贝引用，如果所有的内存都是在栈上申请的，没有什么问题。一旦有内存在**堆上**申请，浅拷贝时，之后拷贝堆上内存的地址，拷贝的对象操作这个内存，会对拷贝后的对象造成影响。  
+
+
+[ :bookmark: 返回目录](#目录)
+
 ## 编程思想
 
 ### 泛型编程思想  
