@@ -52,6 +52,11 @@
   - [类与结构体比较](#类与结构体比较)
   - [类的访问权限及友元](#类的访问权限及友元)
   - [类的运算符重载](#类的运算符重载)
+  - [拷贝构造及深浅拷贝](#拷贝构造及深浅拷贝)
+  - [I/O](#io)
+    - [I/O基础](#io基础)
+    - [I/O缓冲区](#io缓冲区)
+    - [文件I/O基本操作](#文件io基本操作)
 - [编程思想](#编程思想)
   - [泛型编程思想](#泛型编程思想)
 - [进阶编程](#进阶编程)
@@ -2791,7 +2796,7 @@ int Fib2(int n, int ret0, int ret1)
 ```c++
 -exec disass /m
 Dump of assembler code for function main():
-31	    else if (n == 1)
+31	    else if (n == 1)  
    0x0000000000400684 <+36>:	sub    eax,0x1
    0x000000000040068a <+42>:	jne    0x400680 <main()+32>
    0x00000000004006cc <+108>:	sub    eax,0x1
@@ -2836,7 +2841,7 @@ int Fib4(int n)
 [ :bookmark: 返回目录](#目录)
 
 
-## 高级语法
+## 高级语法  
 ### 类与结构体比较    
 - struct默认权限时public  
 - class默认权限时private  
@@ -2944,8 +2949,98 @@ public继承关系
 
 [ :bookmark: 返回目录](#目录)  
 
+### 类的构造函数  
+类的构造函数是类的一种特殊的成员函数，它会在每次创建类的新对象时执行。  
+构造函数的名称与类的名称是完全相同的，并且不会返回任何类型，也不会返回 void。构造函数可用于为某些成员变量设置初始值。  
+
+> 为什么类的构造函数没有返回值?  
+> 为什么类的构造函数不会有拷贝构造的问题?  
+
+示例代码:  
+```c++
+#include <iostream>
+using namespace std;
+
+class CMan
+{
+private:
+    int age;
+
+public:
+    CMan(int age)
+    {
+        this->age = age;
+    }
+};
+
+int main()
+{
+    CMan man1(4);
+    return 0;
+}
+```
+
+汇编实现:  
+```c++
+Dump of assembler code for function main():
+17	{
+   0x000000000040064d <+0>:	push   rbp
+   0x000000000040064e <+1>:	mov    rbp,rsp                      // rbp=0x7fffffffdd00
+   0x0000000000400651 <+4>:	sub    rsp,0x10                     // rsp=0x7fffffffdcf0  main函数栈空间16字节 [rbp-0x10] [rbp-0x08]
+
+18	    CMan man1(4);
+   0x0000000000400655 <+8>:	    lea    rax,[rbp-0x10]           // [rbp-0x10]=0x7fffffffdcf0,所以rax=0x7fffffffdcf0
+                                                                // man变量地址是0x7fffffffdcf0，内存值是:0x7fffffffdde0
+   0x0000000000400659 <+12>:	mov    esi,0x4                  // esi是参数4
+   0x000000000040065e <+17>:	mov    rdi,rax                  // rdi的内容是0x7fffffffdcf0，这块地址目前存储的是0x7fffffffdde0，mov是获取寄存器或地址的值，这里寄存器存储的值就是0x7fffffffdcf0  
+   0x0000000000400661 <+20>:	call   0x4006c0 CMan::CMan(int)  
+
+19	    return 0;
+=> 0x0000000000400666 <+25>:	mov    eax,0x0
+
+20	}
+   0x000000000040066b <+30>:	leave  
+   0x000000000040066c <+31>:	ret    
+
+End of assembler dump.
+
+Dump of assembler code for function CMan::CMan(int):
+10	    CMan(int age)
+   0x00000000004006c0 <+0>:	push   rbp                         // rbp=0x7fffffffdce0
+   0x00000000004006c1 <+1>:	mov    rbp,rsp                     // rsp=0x7fffffffdce0
+   0x00000000004006c4 <+4>:	mov    QWORD PTR [rbp-0x8],rdi     // 接收变量地址man1(rdi)， rdi=0x7fffffffdcf0 ，[rbp-0x8]值为0x7fffffffdcd8,存储的值为0x7fffffffdcf0
+   0x00000000004006c8 <+8>:	mov    DWORD PTR [rbp-0xc],esi     // 参数age  0x4， [rbp-0xc]值为0x7fffffffdcd4
+
+11	    {
+12	        this->age = age;
+=> 0x00000000004006cb <+11>:	mov    rax,QWORD PTR [rbp-0x8] // [rbp-0x8]存储的值就是变量man1的地址0x7fffffffdcf0， rax=0x7fffffffdcf0
+   0x00000000004006cf <+15>:	mov    edx,DWORD PTR [rbp-0xc] // [rbp-0xc]存储的值就是age参数的值0x4
+   0x00000000004006d2 <+18>:	mov    DWORD PTR [rax],edx     // 把地址为0x7fffffffdcf0的初始化2个字节为0x4;这时0x7fffffffdcf0的内存值为0x04 0x00 0x00 0x00 (0xff 0x7f 0x00 0x00)
+                                                               // man变量的大小就是两个字节(int)  
+13	    }
+   0x00000000004006d4 <+20>:	pop    rbp
+   0x00000000004006d5 <+21>:	ret    
+
+End of assembler dump.
+```
+
+从汇编实现中可以看出构造函数没有返回值，而是直接在声明的变量(栈上)操作，`CMan man1(4);` 构造函数直接把`man1`变量的地址作为对象的内存其实地址，再分配两个字节就是成员变量`age`的占用。不会像函数返回值那样，会有返回值(寄存器暂存)和接收变量的浅拷贝。(这就是构造函数没有返回值的原因，效率更高)    
+
+> 这时想想构造函数虽然没有返回值，但是构造的对象直接通过像函数参数形式传入构造函数(this指针)，相当于c/c++中通过传入指针/引用作为参数接收返回值。这样的效率反而更高。  
+
+面向对象的三大特征:  
+- 封装性: 数据和代码捆绑在一起，避免外界的干扰和不确定的访问，封装可以使得代码模块化；(问题简化抽象)  
+- 继承性: 让某种类型的对象可以获得另一种对象的属性和方法，继承可以扩展已有代码；(避免重复造轮子)  
+- 多态性: 同一事物表现出不同事物的能力，即向不同对象会产生不同的行为，多态的目的是为了接口的重用；(便于功能扩充，提高效率)    
+
+面向对象为我们便捷的开发出能适应变化的软件提供可能，但还不够，不是万能的。 (操作系统和数据库的开发更多的还是面向过程的，没有太多太快的变化)    
+
+[ :bookmark: 返回目录](#目录)
+
 ### 类的运算符重载  
 下面就实现CMan的`<<`和`>>`运算符重载(标准输入与输出的运算符重载)    
+
+> `<<`和`>>` 箭头的方向是数据流向的方向  
 
 ```c++
 #include <iostream>
@@ -2989,6 +3084,59 @@ int main()
 ```
 
 还有其他算数运算符的重载(+、-、*、/、+=、-=、*=、/=、++、--)等  
+
+下面就展示`++`前置和后置的运算符重载:  
+示例代码:  
+```c++
+#include <iostream>
+using namespace std;
+
+class CMan
+{
+private:
+    int age;
+
+public:
+    CMan() { cout << "Class Con" << endl; }
+    CMan(int age) { this->age = age; cout << "Class Con Age" << endl;}
+    ~CMan() { cout << "Class Des" << endl; }
+    void SetAge(int a) { age = a; }
+    int GetAge() { return age; }
+
+    CMan &operator++() // 前置
+    {
+        ++age;
+        return *this; // 返回的是引用，不需要拷贝，节省效率
+    }
+
+    CMan operator++(int) // 后置
+    {
+        return CMan(age++); // 不使用临时对象  
+    }
+};
+
+int main()
+{
+    CMan man1(4);
+
+    ++man1;
+    cout << "++man1:" << man1.GetAge() << endl;
+
+    CMan temp = man1++;
+    cout << "temp:" << temp.GetAge() <<";man1++:" << man1.GetAge() << endl;
+
+    return 0;
+}
+```
+运行输出:  
+```
+Class Con Age
+++man1:5
+Class Con Age
+temp:5;man1++:6    // 后置操作符返回一个当前对象，下次使用时，类的成员变量已经修改  
+Class Des
+Class Des
+```
 
 [ :bookmark: 返回目录](#目录)
 
@@ -3081,8 +3229,450 @@ int main()
 **深浅拷贝**  
 浅拷贝相当于拷贝引用，如果所有的内存都是在栈上申请的，没有什么问题。一旦有内存在**堆上**申请，浅拷贝时，之后拷贝堆上内存的地址，拷贝的对象操作这个内存，会对拷贝后的对象造成影响。  
 
+- 浅拷贝:只拷贝指针地址，C++默认拷贝构造函数与赋值运算符都是浅拷贝；减少空间，但容易引发多次释放问题；  
+- 深拷贝:重新分配堆内存，拷贝指针指向的内容，这种操作浪费空间，但不会导致多次释放的问题；  
 
-[ :bookmark: 返回目录](#目录)
+> 浅拷贝可以使用**引用计数**解决资源多次释放问题，但是引用计数需要有额外的开销，最好使用C++新标准中的`move移动`语义，资源所有权的转让，就像智能指针中的那样，这样既不会浪费更多空间，也不会引发资源多次释放的问题。  
+
+```c++
+
+char *m_data; // 用于保存字符串
+
+// 移动(move)构造函数
+String::String(String&& other)
+{
+	if (other.m_data != NULL)
+	{
+		// 资源让渡
+		m_data = other.m_data;  // 不用new空间，直接使用原来的空间  
+		other.m_data = NULL;    // 把原始对象的权限去掉  
+	}
+}
+```  
+
+> 右值引用的标志是&&，顾名思义，右值引用专门为右值而生，可以指向右值，不能指向左值：  
+```c++
+int &&ref_a_right = 5; // ok  
+ 
+int a = 5;
+int &&ref_a_left = a;  // 编译不过，右值引用不可以指向左值
+ 
+ref_a_right = 6;       // 右值引用的用途：可以修改右值  
+```
+
+### 类的抽象及继承  
+#### 继承  
+当创建一个类时，您不需要重新编写新的 `数据成员和成员函数` ，只需指定新建的类继承了一个已有的类的成员即可。这个已有的类称为基类，新建的类称为派生类。  
+继承代表了 is a 关系。例如，哺乳动物是动物，狗是哺乳动物，因此，狗是动物，等等。  
+
+```c++
+#include <iostream>
+ 
+using namespace std;
+ 
+// 基类
+class Shape 
+{
+   public:
+      void setWidth(int w)     // 基类的成员函数
+      {
+         width = w;
+      }
+      void setHeight(int h)
+      {
+         height = h;
+      }
+   protected:
+      int width;              // 基类的成员变量 
+      int height;
+};
+ 
+// 派生类
+class Rectangle: public Shape
+{
+   public:
+      int getArea()
+      { 
+         return (width * height); 
+      }
+};
+ 
+int main(void)
+{
+   Rectangle Rect;
+ 
+   Rect.setWidth(5);
+   Rect.setHeight(7);
+ 
+   // 输出对象的面积
+   cout << "Total area: " << Rect.getArea() << endl;
+ 
+   return 0;
+}
+```
+
+一个类可以派生自多个类(多继承)，这意味着，它可以从多个基类继承数据和函数。定义一个派生类，我们使用一个类派生列表来指定基类。  
+
+多继承代码示例:  
+```c++
+#include <iostream>
+ 
+using namespace std;
+ 
+// 基类 Shape
+class Shape 
+{
+   public:
+      void setWidth(int w)
+      {
+         width = w;
+      }
+      void setHeight(int h)
+      {
+         height = h;
+      }
+   protected:
+      int width;
+      int height;
+};
+ 
+// 基类 PaintCost
+class PaintCost 
+{
+   public:
+      int getCost(int area)
+      {
+         return area * 70;
+      }
+};
+ 
+// 派生类
+class Rectangle: public Shape, public PaintCost
+{
+   public:
+      int getArea()
+      { 
+         return (width * height); 
+      }
+};
+ 
+int main(void)
+{
+   Rectangle Rect;
+   int area;
+ 
+   Rect.setWidth(5);
+   Rect.setHeight(7);
+ 
+   area = Rect.getArea();
+   
+   // 输出对象的面积
+   cout << "Total area: " << Rect.getArea() << endl;
+ 
+   // 输出总花费
+   cout << "Total paint cost: $" << Rect.getCost(area) << endl;
+ 
+   return 0;
+}
+```
+
+#### 虚函数、纯虚函数与虚表    
+
+- 函数为虚函数，不代表函数为不被实现的函数。定义他为虚函数是为了允许用基类的指针来调用子类的这个函数。  
+- 函数为纯虚函数，才代表函数没有被实现。定义纯虚函数是为了实现一个接口，起到一个规范的作用，规范继承这个类的程序员必须实现这个函数。  
+
+> :question: 编译时还是运行时确定调用父类的虚函数还是调用子类函数?  
+
+示例代码:  
+```c++
+#include <iostream>
+using namespace std;
+
+class A
+{
+public:
+    virtual void foo()
+    {
+        cout << "A::foo() is called" << endl;
+    }
+};
+class B : public A
+{
+public:
+    void foo()
+    {
+        cout << "B::foo() is called" << endl;
+    }
+};
+int main(void)
+{
+    A ao;
+    ao.foo();
+    
+    A *a = new B();
+    a->foo(); // 在这里，a虽然是指向A的指针，但是被调用的函数(foo)却是B的!
+
+    B rb;
+    A &ra = rb;
+    ra.foo(); // 在这里，a虽然是指向A的指针，但是被调用的函数(foo)却是B的!
+
+    return 0;
+}
+```
+输出结果:  
+```shell
+A::foo() is called
+B::foo() is called
+B::foo() is called
+```
+
+通过汇编指令查看实现:  
+```c++
+-exec disass /m
+Dump of assembler code for function main():
+21	{
+
+22	    A ao;
+   0x00000000004008f6 <+9>:	mov    QWORD PTR [rbp-0x30],0x400b40
+
+23	    ao.foo();
+   0x00000000004008fe <+17>:	lea    rax,[rbp-0x30]
+   0x0000000000400902 <+21>:	mov    rdi,rax
+   0x0000000000400905 <+24>:	call   0x4009be A::foo()             // A对象调用自己foo函数，编译时确定了。  
+
+24	    
+25	    A *a = new B();
+   0x000000000040090a <+29>:	mov    edi,0x8
+   0x000000000040090f <+34>:	call   0x4007f0 <_Znwm@plt>
+   0x0000000000400914 <+39>:	mov    rbx,rax
+   0x0000000000400917 <+42>:	mov    QWORD PTR [rbx],0x0 
+   0x000000000040091e <+49>:	mov    rdi,rbx                   
+   0x0000000000400921 <+52>:	call   0x400a28 B::B()  
+   0x0000000000400926 <+57>:	mov    QWORD PTR [rbp-0x18],rbx     // 函数返回值保存在rbx寄存器中，赋给指针a([rbp-0x18])作为内容    
+
+26	    a->foo(); // 在这里，a虽然是指向A的指针，但是被调用的函数(foo)却是B的!
+   0x000000000040092a <+61>:	mov    rax,QWORD PTR [rbp-0x18]     // rax 保存指针a指向的地址  rbp=0x7fffffffdcf0 [rbp-0x18]=0x7fffffffdcd8 ，0x7fffffffdcd8地址存储0x602010(this指针指向的地址)  
+   0x000000000040092e <+65>:	mov    rax,QWORD PTR [rax]          // [rax]是取值操作(*rax), 0x602010地址存储的是0x400b20
+   0x0000000000400931 <+68>:	mov    rax,QWORD PTR [rax]          // rax=0x4009e8， [0x400b20]存储的内容是0x4009e8 是<_ZTV1B+16> 内容是: vtable for B
+   0x0000000000400934 <+71>:	mov    rdx,QWORD PTR [rbp-0x18]     // rdx=0x602010
+   0x0000000000400938 <+75>:	mov    rdi,rdx                      // rdi=0x602010  this指针(对象)  
+   0x000000000040093b <+78>:	call   rax                          // 运行时决定的，
+
+27	
+28	    B rb;
+   0x000000000040093d <+80>:	mov    QWORD PTR [rbp-0x40],0x400b20
+
+29	    A &ra = rb;
+   0x0000000000400945 <+88>:	lea    rax,[rbp-0x40]
+   0x0000000000400949 <+92>:	mov    QWORD PTR [rbp-0x20],rax
+
+30	    ra.foo(); // 在这里，a虽然是指向A的指针，但是被调用的函数(foo)却是B的!
+   0x000000000040094d <+96>:	mov    rax,QWORD PTR [rbp-0x20]
+   0x0000000000400951 <+100>:	mov    rax,QWORD PTR [rax]
+   0x0000000000400954 <+103>:	mov    rax,QWORD PTR [rax]
+   0x0000000000400957 <+106>:	mov    rdx,QWORD PTR [rbp-0x20]
+   0x000000000040095b <+110>:	mov    rdi,rdx
+   0x000000000040095e <+113>:	call   rax
+
+31	
+32	    return 0;
+=> 0x0000000000400960 <+115>:	mov    eax,0x0
+
+33	}
+...
+End of assembler dump.
+```
+
+> :loudspeaker:  类的普通成员函数不需要保存在对象中，只需要在调用函数的时候把当前对象保存到寄存器中，函数直接从寄存器中获取。虚函数为什么要保存呢? 调用虚函数不一定是当前对象的实现，需要看具体实例化对象。编译时无法确定，只有在运行时可确定。  
+
+如果类没有任何成员变量及虚函数，只占用1个字节，如果有虚函数，需要占用8个字节(虚表指针)，虚表指针指向所有的虚函数。  
+C++虚函数的实现机制是把类实现的虚函数放到一张表中，再把虚函数表的指针放到对象的内部。这样在调用虚函数的时候，直接到对应实例化对象的内部查找即可(运行时查找)。     
+
+`A *a = new B();`指针`a`指向`B`实例化的对象，其中就包含`B`对象的虚函数表，在调用方法的时候，自然回到`B`实例化对象中寻找。`A`对象中保存`vtable for A`,`B`对象中保存`vtable for B`.  
+
+> 本质还是父类和子类的虚函数拥有相同的数据结构，在调用时流程是一样的，只是值(指向的虚表)不同而已。(多态适合解决变化的问题)     
+
+
+
+[ :bookmark: 返回目录](#目录)  
+
+#### 抽象类  
+- `带有` `纯虚函数` 的类为抽象类  
+
+接口描述了类的行为和功能，而不需要完成类的特定实现。  
+C++ 接口是使用抽象类来实现的，抽象类与数据抽象互不混淆，数据抽象是一个把实现细节与相关的数据分离开的概念。  
+如果类中至少有一个函数被声明为纯虚函数，则这个类就是抽象类。纯虚函数是通过在声明中使用 "= 0" 来指定的，如下所示：  
+```
+class Box
+{
+   public:
+      // 纯虚函数
+      virtual double getVolume() = 0;
+   private:
+      double length;      // 长度
+      double breadth;     // 宽度
+      double height;      // 高度
+};
+```
+
+[ :bookmark: 返回目录](#目录)  
+
+### I/O  
+#### I/O基础  
+传统C中I/O有printf,scanf,getch,gets等函数，它们的问题是:  
+- 不可编程，仅仅能够识别固有的数据类型；
+- 代码的移植性差，有很多坑  
+
+C++中I/O流istream、ostream等:  
+- 可编程，对于类库设计者很有用；
+- 简化编程，能使得I/O的风格一致；  
+
+C++ I/O关系图:  
+
+![C++IO关系图](../../res/C++IO关系图.png)  
+
+#### I/O缓冲区    
+- 按块缓存；比如文件系统，也叫全缓冲:当填满标准I/O缓存后才进行实际I/O操作。    
+- 按行缓存；比如键盘操作，当在输入和输出中遇到换行符时，执行真正的I/O操作。    
+- 不缓存； 标准输出错误stderr  
+
+> 比如我们从磁盘里取信息，我们先把读出的数据放在**缓冲区**，计算机再直接从**缓冲区**中取数据，等**缓冲区**的数据取完后再去磁盘中读取，这样就可以减少磁盘的读写次数，再加上计算机对缓冲区的操作大大快于对磁盘的操作，故应用缓冲区可大大提高计算机的运行速度。  
+
+缓冲区刷新情况:  
+1. 缓冲区满时；
+2. 执行flush语句；
+3. 执行endl语句；
+4. 关闭文件。
+
+下面展示从缓存区读取到脏数据的实例:  
+```c++
+#include <iostream>
+#include <limits>
+using namespace std;
+
+int main()
+{
+    int a;
+    int index = 0;
+    while (cin >> a)
+    {
+        cout << "The numbers are: " << a << endl;
+        index++;
+        if (index == 5)
+        {
+            break;
+        }
+    }
+
+    // cin.ignore(numeric_limits<std::streamsize>::max(), '\n'); // 清空缓存区脏数据
+
+    char ch;
+    cin >> ch;
+    cout << "the last char is: " << ch << endl;
+
+    return 0;
+}
+```
+输入数据`1 2 3 4 5 6`一次性输入6个数据之后加回车，输出的结果是:  
+```
+1 2 3 4 5 6
+The numbers are: 1
+The numbers are: 2
+The numbers are: 3
+The numbers are: 4
+The numbers are: 5
+the last char is: 6
+```
+
+> 输入6个数据，按回车键时，缓冲区的数据发送到程序中，`cin >> a`只接收了前5个数据，缓冲区中还有一个数据`6`,这时如果没有清除缓冲区，缓冲区的数据将发送到`cin >> ch`,读取到脏数据  
+
+可以使用`cin.ignore(numeric_limits<std::streamsize>::max(), '\n');`清除缓冲区的数据，数字尽量大一些。  
+
+[ :bookmark: 返回目录](#目录)  
+
+
+#### 文件I/O基本操作    
+- C++把每个文件看成是一个有序的字节序列，每个文件都以文件结束标志结束  
+
+文件的基本操作:  
+1. `open` 打开文件用于读写；
+2. `fail` 检查文件是否打开成功；
+3. `read/write` 读写操作；
+4. `EOF(end of file)` 检查是否读完；
+5. `close` 使用完成后关闭文件  
+
+示例代码:  
+```c++
+#include <string>
+#include <fstream>
+#include <iostream>
+using namespace std;
+
+static const int bufferLen = 2048;
+bool CopyFile(const string &src, const string &dst)
+{
+    // 打开源文件和目标文件
+    // 源文件以二进制读的方式打开
+    // 目标文件以二进制写的方式打开
+    ifstream in(src.c_str(), ios::in | ios::binary);
+    ofstream out(dst.c_str(), ios::out | ios::binary | ios::trunc);
+
+    // 判断文件打开是否成功，失败返回false
+    if (!in || !out)
+    {
+        return false;
+    }
+
+    // 从源文件中读取数据，写到目标文件中
+    // 通过读取源文件的EOF来判断读写是否结束
+    char temp[bufferLen];
+    while (!in.eof())
+    {
+        in.read(temp, bufferLen);
+        streamsize count = in.gcount();
+        out.write(temp, count);
+    }
+
+    // 关闭源文件和目标文件
+    in.close();
+    out.close();
+
+    return true;
+}
+
+int main()
+{
+    cout << CopyFile("Blue Daube.mp3", "Blue Daube2.mp3") << endl;
+    return 0;
+}
+```
+
+需要注意文件打开模式:  
+| 模式标记 | 适用对象 | 作用 |
+| ------ | -------- | --- |
+| ios::in | ifstream fstream | 打开文件用于读取数据。如果文件不存在，则打开出错。 |
+| ios::out | ofstream fstream | 打开文件用于写入数据。如果文件不存在，则新建该文件；如果文件原来就存在，则打开时清除原来的内容。 |
+| ios::app | ofstream fstream | 打开文件，用于在其尾部添加数据。如果文件不存在，则新建该文件。 |
+| ios::ate | ifstream | 打开一个已有的文件，并将文件读指针指向文件末尾，如果文件不存在，则打开出错。 | 
+| ios:: trunc | ofstream | 打开文件时会清空内部存储的所有数据，单独使用时与 ios::out 相同。 | 
+| ios::binary | ifstream ofstream fstream | 以二进制方式打开文件。若不指定此模式，则以文本模式打开。 | 
+| ios::in \| ios::out | fstream | 打开已存在的文件，既可读取其内容，也可向其写入数据。文件刚打开时，原有内容保持不变。如果文件不存在，则打开出错。 | 
+| ios::in \| ios::out | ofstream | 打开已存在的文件，可以向其写入数据。文件刚打开时，原有内容保持不变。如果文件不存在，则打开出错。| 
+| ios::in \| ios::out \| ios::trunc | fstream | 打开文件，既可读取其内容，也可向其写入数据。如果文件本来就存在，则打开时清除原来的内容；如果文件不存在，则新建该文件。 | 
+
+[ :bookmark: 返回目录](#目录)  
+
+### 头文件重复包含问题  
+
+为了同一个文件被多次include，有两种方式:  
+1. `#ifndef __HEAD_FILE__ #define #endif `  
+使用宏来防止同一个文件被多次包含，优点是移植性好，缺点是无法防止宏重名，难以排错。  
+
+2. `#progma once`  
+使用编译器来防止同一个文件被多次包含，优点是可以防止宏重名，易于排错，缺点是移植性不好。   
+
+[ :bookmark: 返回目录](#目录)  
+
 
 ## 编程思想
 
