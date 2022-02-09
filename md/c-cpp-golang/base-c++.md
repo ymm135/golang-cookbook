@@ -3690,6 +3690,14 @@ int main()
 
 
 ## 编程思想
+### 软件设计模式  
+一个模式描述了一个不断发生的问题及问题解决方案。  
+
+- 设计模式不是万能的，它建立在系统的变化点上，哪里有变化哪里就可以使用。  
+- 设计模式为了解耦合，为了扩展，它通常是演变过来的，需要演变才能准确定位。  
+
+### 单例模式  
+
 
 ### 泛型编程思想  
 - 如果说面向对象是一种通过间接层来调用函数，以换取一种抽象，那么泛型编程则是更直接的抽象，它不会因为间接层而损失效率;
@@ -4007,6 +4015,354 @@ int main()
     return 0;
 }
 ```
+
+[ :bookmark: 返回目录](#目录)
+
+
+### 关联容器的基本使用  
+- 主要关注删除迭代器失效  
+
+示例代码:  
+```c++
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <map>
+using namespace std;
+
+// map打印
+struct Display
+{
+public:
+    void operator()(pair<string, double> e)
+    {
+        cout << e.first << ":" << e.second << endl;
+    }
+};
+
+int main()
+{
+    map<string, double> stuScores;
+    //插入元素的三种方式
+    stuScores["LiMing"] = 99.6;
+    stuScores["LiMing1"] = 90.6;
+    stuScores.insert(pair<string, double>("LiHong", 95.6));
+    stuScores.insert(pair<string, double>("LiHong1", 92.6));
+    stuScores.insert(map<string, double>::value_type("LiXi", 94.0));
+
+    // 遍历
+    for_each(stuScores.begin(), stuScores.end(), Display());
+
+    // 迭代器查找元素
+    map<string, double>::iterator iter;
+    iter = stuScores.find("LiHong");
+
+    if (iter != stuScores.end())
+    {
+        cout << "Find Success!" << endl;
+    }
+    else
+    {
+        cout << "Find Fail!" << endl;
+    }
+    for_each(stuScores.begin(), stuScores.end(), Display());
+    cout << "=================" << endl;
+
+    // 使用遍历器查找遍历
+    iter = stuScores.begin();
+    while (iter != stuScores.end())
+    {
+        if (iter->second < 91)
+        {
+            // stuScores.erase(iter);  // 删除迭代器失效
+            stuScores.erase(iter++);
+        }else
+        {
+            iter++;
+        }
+    }
+    for_each(stuScores.begin(), stuScores.end(), Display());
+    cout << "=================" << endl;
+
+    for (iter = stuScores.begin(); iter != stuScores.end(); iter++)
+    {
+        if (iter->second < 93)
+        {
+            iter = stuScores.erase(iter);
+        }
+    }
+    for_each(stuScores.begin(), stuScores.end(), Display());
+    cout << "=================" << endl;
+
+    return 0;
+}
+```
+
+[ :bookmark: 返回目录](#目录)
+
+### 仿函数(functor)  
+- 仿函数一般不会单独使用，主要为了搭配STL算法使用
+- 函数指针无法满足STL对抽象性的要求，不能满足软件积木的要求
+- 本质就是重载一个类的`operation()`,创建一个行为类似函数的对象  
+
+下面展示实现容器排序的演变:  
+```c++  
+#include <algorithm>
+#include <iostream>
+using namespace std;
+
+bool MySort(int a, int b)
+{
+    return a < b;
+}
+void Display(int a)
+{
+    cout << a << " ";
+}
+
+template <typename T>
+inline bool MySortT(T const &a, T const &b)
+{
+    return a < b;
+}
+template <typename T>
+inline void DisplayT(T const &a)
+{
+    cout << a << " ";
+}
+
+// 使用结构体的仿函数就行(默认public)
+struct SortF
+{
+    bool operator()(int a, int b)
+    {
+        return a < b;
+    }
+};
+
+struct DisplayF
+{
+    void operator()(int a)
+    {
+        cout << a << " ";
+    }
+};
+
+// C++仿函数模板
+template <typename T>
+struct SortTF
+{
+    inline bool operator()(T const &a, T const &b) const
+    {
+        return a < b;
+    }
+};
+template <typename T>
+struct DisplayTF
+{
+    inline void operator()(T const &a) const
+    {
+        cout << a << " ";
+    }
+};
+
+int main()
+{
+    // C++方式
+    int arr[] = {4, 3, 2, 1, 7};
+    sort(arr, arr + 5, MySort);
+    for_each(arr, arr + 5, Display);
+    cout << endl;
+
+    // C++泛型
+    int arr2[] = {4, 3, 2, 1, 7};
+    sort(arr2, arr2 + 5, MySortT<int>);
+    for_each(arr2, arr2 + 5, DisplayT<int>);
+    cout << endl;
+
+    // C++仿函数
+    int arr3[] = {4, 3, 2, 1, 7};
+    sort(arr3, arr3 + 5, SortTF<int>());
+    for_each(arr3, arr3 + 5, DisplayTF<int>());
+    cout << endl;
+
+    // C++仿函数模板
+    int arr4[] = {4, 3, 2, 1, 7};
+    sort(arr4, arr4 + 5, SortF());
+    for_each(arr4, arr4 + 5, DisplayF());
+    cout << endl;
+
+    return 0;
+}
+```
+
+仿函数不仅能够像普通函数那样接收参数和处理，还能存储更多信息:  
+```c++
+class StringAppend
+{
+public:
+    explicit StringAppend(const string& str) : ss(str){}
+    void operator() (const string& str) const
+    {
+         cout<<str<<' '<<ss<<endl;
+    }
+private:
+    const string ss;
+};
+
+int main()
+{
+    StringAppend myFunctor2("and world!");
+    myFunctor2("Hello");
+    return 0;
+}
+```
+
+> explicit关键字用来修饰类的构造函数，被修饰的构造函数的类，不能发生相应的隐式类型转换，只能以显示的方式进行类型转换。  
+
+### lambda表达式(匿名函数对象)  
+格式:  
+```
+[捕获列表] (形参列表) mutable 异常列表-> 返回类型
+{
+    函数体
+}
+```  
+1. 捕获列表：捕获外部变量，捕获的变量可以在函数体中使用，可以省略，即不捕获外部变量。
+2. 形参列表：和普通函数的形参列表一样。可省略，即无参数列表
+3. mutable：mutable 关键字，如果有，则表示在函数体中可以修改捕获变量，根据具体需求决定是否需要省略。
+4. 异常列表：noexcept / throw(...),和普通函数的异常列表一样，可省略，即代表可能抛出任何类型的异常。
+5. 返回类型：和函数的返回类型一样。可省略，如省略，编译器将自动推导返回类型。
+6. 函数体：代码实现。可省略，但是没意义。  
+
+示例代码:  
+```c++
+#include<iostream>
+using namespace std;
+
+void lambdaDemo()
+{
+    int a = 1;
+    int b = 2;
+    auto lambda = [a, b](int x, int y)mutable throw() -> bool
+    {
+        return a + b > x + y;
+    };
+    bool ret = lambda(3, 4);
+}
+
+int main()
+{
+    lambdaDemo();
+}
+```
+
+通过汇编实现查看lambda表达式实现:  
+```c++
+6	    int a = 1;
+   0x0000000000400683 <+8>:	mov    DWORD PTR [rbp-0x4],0x1
+
+7	    int b = 2;
+   0x000000000040068a <+15>:	mov    DWORD PTR [rbp-0x8],0x2
+
+8	    auto lambda = [a, b](int x, int y)mutable throw() -> bool
+9	    {
+10	        return a + b > x + y;
+11	    };
+   0x0000000000400691 <+22>:	mov    eax,DWORD PTR [rbp-0x4]
+   0x0000000000400694 <+25>:	mov    DWORD PTR [rbp-0x20],eax
+   0x0000000000400697 <+28>:	mov    eax,DWORD PTR [rbp-0x8]
+   0x000000000040069a <+31>:	mov    DWORD PTR [rbp-0x1c],eax
+
+12	    bool ret = lambda(3, 4);
+=> 0x000000000040069d <+34>:	lea    rax,[rbp-0x20]
+   0x00000000004006a1 <+38>:	mov    edx,0x4
+   0x00000000004006a6 <+43>:	mov    esi,0x3
+   0x00000000004006ab <+48>:	mov    rdi,rax
+   0x00000000004006ae <+51>:	call   0x40064e <__lambda0::operator()(int, int)>
+   0x00000000004006b3 <+56>:	mov    BYTE PTR [rbp-0x9],al
+
+```
+
+从汇编实现中可以看出，lambda表达式最终调用是匿名类`__lambda0`的运算符`()`重载。相当于编译后的代码为:  
+
+```c++
+class __lambda0
+{
+private:
+    int a;
+    int b;
+public:
+    lambda_xxxx(int _a, int _b) :a(_a), b(_b)   // [] 构造参数  捕获列表
+    {
+    }
+    bool operator()(int x, int y) throw()       // 形参列表  
+    {
+        return a + b > x + y;
+    }
+};
+void lambdaDemo()
+{
+    int a = 1;
+    int b = 2;
+    __lambda0 lambda = __lambda0(a, b);
+    bool ret = lambda.operator()(3, 4);
+}
+```  
+
+主要的操作还是在编译时，编译器根据lambda表达式语法自动翻译成匿名函数对象()
+
+
+### STL算法基本使用  
+STL算法大致分为四大类:
+1. 非可变序列算法:指不直接修改其所操作的容器内容的算法；
+2. 可变序列算法:指可以修改它们所操作的容器内容的算法；
+3. 排序算法:包括对序列进行排序和合并的算法、搜索算法以及有序序列上的集合操作；
+4. 数值算法:对容器内容进行数值计算
+
+包含的头文件有三个: `<algorithm>`, `<numeric>`, `<functional>`  
+
+- 最常见的算法包括:  
+查找，排序和通用算法，排列组合算法,数值算法，集合算法等算法;  
+
+transform、lambda表达式、统计和二分查找:  
+```c++
+#include <vector>
+#include <algorithm>
+#include <functional>
+#include <numeric>
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    // transform和lambda表达式
+    int ones[] = {1, 2, 3, 4, 5};
+    int twos[] = {10, 20, 30, 40, 50};
+    int results[5];
+    transform(ones, ones + 5, twos, results, std::plus<int>()); // 数组元素依次相加并返回
+    for_each(results, results + 5,
+             [](int a) -> void
+             { cout << a << endl; }); // lambda表达式（匿名函数）
+    cout << endl;
+
+    // find
+    int arr[] = {0, 1, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 7, 8};
+    int len = sizeof(arr) / sizeof(arr[0]);
+    vector<int> iA(arr + 2, arr + 6); // {2,3,3,4}
+    // vector<int> iA;
+    // iA.push_back(1);
+    // iA.push_back(9); // {1, 9}
+    cout << count(arr, arr + len, 6) << endl;                          // 统计6的个数
+    cout << count_if(arr, arr + len, bind2nd(less<int>(), 7)) << endl; // 统计<7的个数
+    cout << binary_search(arr, arr + len, 9) << endl;                  // 9找不到
+    cout << *search(arr, arr + len, iA.begin(), iA.end()) << endl;     // 查找子序列
+
+    cout << endl;
+
+    return 0;
+}
+```  
 
 [ :bookmark: 返回目录](#目录)
 
