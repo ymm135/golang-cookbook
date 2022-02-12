@@ -64,11 +64,24 @@
     - [文件I/O基本操作](#文件io基本操作)
   - [头文件重复包含问题](#头文件重复包含问题)
 - [编程思想](#编程思想)
+  - [软件设计模式](#软件设计模式)
+  - [单例模式](#单例模式)
   - [泛型编程思想](#泛型编程思想)
 - [进阶编程](#进阶编程)
   - [STL标准模板库(Standard Template Library)](#stl标准模板库standard-template-library)
   - [容器](#容器-1)
   - [序列式容器的基本使用](#序列式容器的基本使用)
+  - [关联容器的基本使用](#关联容器的基本使用)
+  - [仿函数(functor)](#仿函数functor)
+  - [lambda表达式(匿名函数对象)](#lambda表达式匿名函数对象)
+  - [STL算法基本使用](#stl算法基本使用)
+    - [迭代器的基本使用](#迭代器的基本使用)
+    - [容器适配器(adapter)](#容器适配器adapter)
+    - [空间配置器(allocator)](#空间配置器allocator)
+  - [Boost库](#boost库)
+  - [CPP多线程基础](#cpp多线程基础)
+  - [tyr/catch 异常处理](#tyrcatch-异常处理)
+  - [Bug分析](#bug分析)
 - [GUI开发](#gui开发)
 - [陷阱与经验](#陷阱与经验)
 
@@ -4363,6 +4376,155 @@ int main()
     return 0;
 }
 ```  
+
+#### 迭代器的基本使用  
+- 迭代器相当于指针指针  
+
+示例代码:  
+```
+#include <list>
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    list<int> v;
+    v.push_back(3);
+    v.push_back(4);
+    v.push_front(2);
+    v.push_front(1); // 1, 2, 3, 4
+
+    list<int>::const_iterator it;
+    for (it = v.begin(); it != v.end(); it++)
+    {
+        //*it += 1;  // 常量迭代器不能修改
+        cout << *it << " ";
+    }
+    cout << endl;
+
+    // 注意：迭代器不支持<
+    // for (it = v.begin(); it < v.end(); it++)
+    //{
+    //	cout << *it << " ";
+    //}
+    cout << v.front() << endl;
+    v.pop_front(); // 从顶部去除
+
+    list<int>::reverse_iterator it2;
+    for (it2 = v.rbegin(); it2 != v.rend(); it2++)
+    {
+        *it2 += 1;
+        cout << *it2 << " "; // 5 4 3
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
+#### 容器适配器(adapter)  
+
+- stack 堆栈  一种先进后出的容器，底层的数据结构是deque；  
+- queue 队列 一种先进先出的容器，底层的数据结构是deque；  
+- priority_queue 优先队列 一种特殊的队列，它能够在队列中进行排序(堆排序)，底层的数据结构是vector或者deque；  
+
+```c++
+#include <functional>
+#include <stack>
+#include <queue>
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    // stack<int> s;
+    // queue<int> q;
+
+    priority_queue<int> pq;                             // 默认是最大值优先
+    priority_queue<int, vector<int>, less<int>> pq2;    //   最大值优先
+    priority_queue<int, vector<int>, greater<int>> pq3; // 最小值优先
+
+    pq.push(2);
+    pq.push(1);
+    pq.push(3);
+    pq.push(0);
+    while (!pq.empty())
+    {
+        int top = pq.top();
+        cout << " top is: " << top << endl;
+        pq.pop();
+    }
+    cout << endl;
+
+    pq2.push(2);
+    pq2.push(1);
+    pq2.push(3);
+    pq2.push(0);
+    while (!pq2.empty())
+    {
+        int top = pq2.top();
+        cout << " top is: " << top << endl;
+        pq2.pop();
+    }
+    cout << endl;
+
+    pq3.push(2);
+    pq3.push(1);
+    pq3.push(3);
+    pq3.push(0);
+    while (!pq3.empty())
+    {
+        int top = pq3.top();
+        cout << " top is: " << top << endl;
+        pq3.pop();
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
+[ :bookmark: 返回目录](#目录)
+
+#### 空间配置器(allocator)   
+- 《STL源码剖析》候捷 SGI STL版本的可读性较强(非微软版本实现)    
+- 从使用者的角度，allocator隐藏在其他组件中默默工作，不需要关系，但是从理解STL的角度来看，它是首要分析的组件  
+- allocator的分析可以体现C++在性能和资源上优化思想  
+
+
+> 《STL源码剖析》的目录  
+```
+第1章 STL概论与版本简介
+第2章 空间配置器（allocator）
+第3章 迭代器（iterators）概念与traits编程技法
+第4章 序列式容器（sequence containers）
+第5章 关联式容器（associattive containers）
+第6章 算法（algorithms）
+第7章 仿函数（functors，另名 函数对象function objects）
+第8章 配接器（adapters）
+附录A 参考书籍与推荐读物
+附录B 候捷网站（本书支持站点简介）
+附录C STLPort 的移植经验（by孟岩）
+索引
+```
+
+
+[ :bookmark: 返回目录](#目录)
+
+### Boost库  
+
+
+[ :bookmark: 返回目录](#目录)
+
+### CPP多线程基础
+
+[ :bookmark: 返回目录](#目录)
+
+### tyr/catch 异常处理
+
+[ :bookmark: 返回目录](#目录)
+
+### Bug分析  
 
 [ :bookmark: 返回目录](#目录)
 
