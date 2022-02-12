@@ -4508,15 +4508,95 @@ int main()
 索引
 ```
 
-
 [ :bookmark: 返回目录](#目录)
 
 ### Boost库  
+- Boost库是为C++语言标准库提供扩展的一些C+＋程序库的总称，由Boost社区组织开发、维护，Boost库可以与C++标准库完美共同工作，并且为其提供扩展功能  
+- Boost可为大致为20多个分类：字符串和文本处理库,容器库，算法库，函数对象和高阶编程库，综合类库等等;  
+
+[官方地址](https://www.boost.org/)  
+https://dl.bintray.com/boostorg/release/  
+
+vs使用boost需要在`配置属性`>>`C/C++`>>`常规`>>`附件包含目录`增加boost源码路径，另外
+还需要增加库(lib)目录，在 `配置属性`>>`链接器`>>`常规`>>`附件库目录`  
+
+示例代码:  
+```c++
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+using namespace std;
+using boost::lexical_cast;
+
+int main()
+{
+    int i = lexical_cast<int>("123");
+    cout << i << endl;
+
+    string s = lexical_cast<string>(1.23);
+    cout << s << endl;
+
+    int ii;
+    try
+    {
+        ii = lexical_cast<int>("abcd");
+    }
+    catch (boost::bad_lexical_cast &e)
+    {
+        cout << e.what() << endl;
+    }
+
+    return 0;
+}
+```
+
+> 主要是把软件开发完成，没有必要使用boost库，很多功能已经集成到C++标准中。库的体积也比较大。  
 
 
 [ :bookmark: 返回目录](#目录)
 
 ### CPP多线程基础
+- C++11之后把多线程(class Thread)融入到标准中。  
+- Mutex等锁的使用  
+- 进程与线程，同步与异步的区别  
+- 线程的交换与移动  
+
+
+> 报错: terminate called after throwing an instance of 'std::system_error'
+> what():  Enable multithreading to use std::thread: Operation not permitted  
+
+需要链接线程库`g++  main.cpp -o main.out -pthread -std=c++11`  
+
+```c++
+#include <thread>
+#include <mutex>
+#include <iostream>
+using namespace std;
+
+mutex g_mutex;
+void T1()
+{
+    g_mutex.lock();
+    cout << "T1 Hello" << endl;
+    g_mutex.unlock();
+}
+void T2(const char *str)
+{
+    g_mutex.lock();
+    cout << "T2 " << str << endl;
+    g_mutex.unlock();
+}
+int main()
+{
+    thread t1(T1);
+    thread t2(T2, "Hello World");
+    t1.join();
+    // t2.join();
+    t2.detach();
+    cout << "Main Hi" << endl;
+
+    return 0;
+}
+```
 
 [ :bookmark: 返回目录](#目录)
 
