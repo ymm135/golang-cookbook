@@ -75,7 +75,7 @@
 
 
   - **c/c++/go对比** 
-    - [c基础](md/c-cpp-golang/base-c.md)  
-    - [c++基础](md/c-cpp-golang/base-c++.md)  
+    - [c基础及进阶](md/c-cpp-golang/base-c.md)  
+    - [c++基础及进阶](md/c-cpp-golang/base-c++.md)  
     - [c/c++/go对比](md/c-cpp-golang/c-c++-golang.md)  
 
