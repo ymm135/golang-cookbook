@@ -72,7 +72,7 @@
     - [pgsql基础](md/middleware/pgsql/pgsql-base.md)  
 
   - [**gRPC实现原理**](https://github.com/ymm135/go-coding/blob/main/lang/rpc/grpc/README.md)
-
+    - [c语言通过grpc与go通信](md/middleware/rpc/c-grpc-go.md) 
 
   - **c/c++/go对比** 
     - [c基础及进阶](md/c-cpp-golang/base-c.md)  
