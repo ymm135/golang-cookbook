@@ -273,6 +273,16 @@ int main(int argc, char **argv) {
 }
 ```
 
+把自己的程序编译成`init`二进制文件，然后打包为`rootfs.img`,最终内核运行时，会启动该文件  
+```shell
+$(CC) $(CFLAGS) $(INC) $(SRCS) -o init -static -lpthread # 把程序编译为init
+find init | cpio -o -Hnewc | gzip -9 > ../rootfs.img     # 把init打包为img
+```
+
+> vscode 全局配置文件json 调出命令行，输入`Preferences: Configure language specific settings` 可直接编辑setting.json配置文件  
+
+
 
 - #### 参考文章1 [搭建 Linux 内核网络调试环境](https://zhuanlan.zhihu.com/p/445453676)  
 - #### 参考文章2 [使用 GDB + Qemu 调试 Linux 内核](https://z.itpub.net/article/detail/9CCD29B78F55B5BEA664AD7045915411)  
+- #### [linux内核其他调试环境](../../md/other/linux-core-debug.md) 
