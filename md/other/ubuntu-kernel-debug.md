@@ -279,10 +279,28 @@ $(CC) $(CFLAGS) $(INC) $(SRCS) -o init -static -lpthread # 把程序编译为ini
 find init | cpio -o -Hnewc | gzip -9 > ../rootfs.img     # 把init打包为img
 ```
 
+> cpio -o或--create 　执行copy-out模式，建立备份档, -H<备份格式> 　指定备份时欲使用的文件格式   -Hnewc  SVR4的格式，如果使用ASCII  -H odc
+> gzip -<压缩效率> 　压缩效率是一个介于1－9的数值，预设值为"6"，指定愈大的数值，压缩效率就会愈高。  
+
+如果解压`rootfs.img`
+```shell
+mv rootfs.img rootfs.img.gz 
+gzip -d -v rootfs.img.gz
+
+cpio -i < rootfs.img  
+
+# file init 
+init: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=88728f3ec8d24dc02b8aaadbaf4a66da499c7a0a, for GNU/Linux 3.2.0, not stripped
+```
+
+
+
 > vscode 全局配置文件json 调出命令行，输入`Preferences: Configure language specific settings` 可直接编辑setting.json配置文件  
 
-
+> kernel镜像格式:vmlinux  vmlinuz是可引导的、可压缩的内核镜像，vm代表Virtual Memory.Linux支持虚拟内存，因此得名vm.它是由用户对内核源码编译得到，实质是elf格式的文件.也就是说，vmlinux是编译出来的最原始的内核文件，未压缩.这种格式的镜像文件多存放在PC机上.  
+> kernel镜像格式:bzImage  bz表示big zImage,其格式与zImage类似，但采用了不同的压缩算法，注意，bzImage的压缩率更高.  
 
 - #### 参考文章1 [搭建 Linux 内核网络调试环境](https://zhuanlan.zhihu.com/p/445453676)  
 - #### 参考文章2 [使用 GDB + Qemu 调试 Linux 内核](https://z.itpub.net/article/detail/9CCD29B78F55B5BEA664AD7045915411)  
 - #### [linux内核其他调试环境](../../md/other/linux-core-debug.md) 
+- #### [gdb-kernel-debugging](https://www.kernel.org/doc/html/v4.11/dev-tools/gdb-kernel-debugging.html)

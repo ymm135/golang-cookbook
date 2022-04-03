@@ -44,6 +44,9 @@
     - [gorm实现原理](md/web/gorm/flow-gorm.md)  
 
 - **中间件**
+  - **mysql** 
+    - [mysql 5.7源码调试](md/middleware/mysql/mysql-debug-source.md)  
+    - [myql 基础知识](md/middleware/mysql/mysql-base.md)  
   - **nginx**
     - [nginx基础](md/middleware/nginx/nginx-base.md)  
 
