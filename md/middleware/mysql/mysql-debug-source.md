@@ -298,6 +298,15 @@ int mysqld_main(int argc, char **argv)
 }
 ```
 
+vscode 调试视图 
+
+<br>
+<div align=center>
+    <img src="../../../res/mysql-debug.png" width="100%" height="100%" ></img>  
+</div>
+<br>
+
+
 ## mysql 通信数据包  
 
 首先wireshark需要打开mysql协议  
