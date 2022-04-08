@@ -6,6 +6,8 @@ socket是一种操作系统提供的进程间通信机制。
 
 在操作系统中，通常会为应用程序提供一组应用程序接口（API），称为套接字接口（英语：socket API）。应用程序可以通过套接字接口，来使用网络套接字，以进行资料交换。最早的套接字接口来自于4.2 BSD，因此现代常见的套接字接口大多源自Berkeley套接字（Berkeley sockets）标准。在套接字接口中，以IP地址及端口组成套接字地址（socket address）。远程的套接字地址，以及本地的套接字地址完成连线后，再加上使用的协议（protocol），这个五元组（five-element tuple），作为套接字对（socket pairs），之后就可以彼此交换资料。例如，在同一台计算机上，TCP协议与UDP协议可以同时使用相同的port而互不干扰。 操作系统根据套接字地址，可以决定应该将资料送达特定的行程或线程。这就像是电话系统中，以电话号码加上分机号码，来决定通话对象一般。  
 
+- #### [IO多路复用器实现原理](https://github.com/ymm135/IO-Multiplexing)  
+
 ## socket架构及流程  
 - socket整体架构 
 
@@ -19,7 +21,7 @@ socket是一种操作系统提供的进程间通信机制。
 
 <br>
 <div align=center>
-    <img src="../../../res/socket-tcp.png" width="80%" height="80%"></img>  
+    <img src="../../../res/socket-tcp.png" width="60%" height="60%"></img>  
 </div>
 <br>
 

@@ -159,7 +159,13 @@ qemu-system-x86_64 -kernel ../../arch/x86/boot/bzImage -initrd ../rootfs.img -ap
 s
 # 在 qemu 窗口输入小写字符 'c', 启动测试用例客户端程序。
 c
-```
+```  
+
+> -kernel bzImage use 'bzImage' as kernel image  
+> -append cmdline use 'cmdline' as kernel command line  
+> -initrd file    use 'file' as initial ram disk  
+
+
 
 > 界面会出现 `guest has not initialized the display(yet)` ，这个不影响，因为我们增加`-S`参数，所以启动时暂停了  
 
@@ -300,7 +306,302 @@ init: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linke
 > kernel镜像格式:vmlinux  vmlinuz是可引导的、可压缩的内核镜像，vm代表Virtual Memory.Linux支持虚拟内存，因此得名vm.它是由用户对内核源码编译得到，实质是elf格式的文件.也就是说，vmlinux是编译出来的最原始的内核文件，未压缩.这种格式的镜像文件多存放在PC机上.  
 > kernel镜像格式:bzImage  bz表示big zImage,其格式与zImage类似，但采用了不同的压缩算法，注意，bzImage的压缩率更高.  
 
+
+## 制作文件系统  
+
+- ### busybox编译  
+BusyBox 将许多常见 UNIX 实用程序的微小版本组合成一个小型可执行文件。BusyBox 为任何小型或嵌入式系统提供了一个相当完整的环境。  
+
+```shell
+$ wget http://busybox.net/downloads/busybox-1.32.0.tar.bz2
+$ tar vjxf busybox-1.32.0.tar.bz2
+$ cd busybox-1.32.0/
+$ make menuconfig
+```
+
+相关的配置如下，同样[*]的代表打开，[ ]代表关闭.可以适当增加删减一些配置.  
+
+```shell
+Busybox Settings  --->
+  [*] Don't use /usr (NEW)
+  --- Build Options
+  [*] Build BusyBox as a static binary (no shared libs)
+  --- Installation Options ("make install" behavior)
+  (./_install) BusyBox installation prefix (NEW)
+
+Miscellaneous Utilities  --->
+  [ ] flash_eraseall
+  [ ] flash_lock
+  [ ] flash_unlock
+  [ ] flashcp
+```
+
+编译busybox，会安装到./_install目录下  
+
+```shell
+$ make -j4
+$ make install
+
+$ ls _install/
+drwxr-xr-x 2 root root 4096 Apr  5 20:31 bin
+lrwxrwxrwx 1 root root   11 Apr  5 20:31 linuxrc -> bin/busybox
+drwxr-xr-x 2 root root 4096 Apr  5 20:31 sbin
+``` 
+
+- ### 制作文件系统  
+根文件系统镜像大小256MiB，格式化为ext3文件系统．  
+
+```shell
+# in working-dir
+$ dd if=/dev/zero of=rootfs.img bs=1M count=256
+$ mkfs.ext3 rootfs.img
+```
+
+将文件系统mount到本地路径，复制busybox相关的文件，并生成必要的文件和目录
+```shell
+# in working-dir
+$ mkdir /tmp/rootfs-busybox
+$ sudo mount -o loop $PWD/rootfs.img /tmp/rootfs-busybox
+
+$ sudo cp -a ../busybox-1.32.0/_install/* /tmp/rootfs-busybox/
+$ pushd /tmp/rootfs-busybox/              # 进入到目录: /tmp/rootfs-busybox/
+$ sudo mkdir dev sys proc etc lib mnt
+$ popd                                    # 返回到源目录 
+```
+
+还需要制作系统初始化文件
+```shell
+# in working-dir
+$ sudo cp -a ../busybox-1.32.0/examples/bootfloppy/etc/* /tmp/rootfs-busybox/etc/
+```
+
+Busybox所使用的rcS，内容可以写成  
+```shell
+$ cat /tmp/rootfs-busybox/etc/init.d/rcS
+#! /bin/sh
+
+/bin/mount -a
+/bin/mount -t sysfs sysfs /sys
+/bin/mount -t tmpfs tmpfs /dev
+/sbin/mdev -s
+```
+
+可以查看文件列表: 
+```shell
+# ls -l /tmp/rootfs-busybox
+drwxr-xr-x 2 root root  4096 Apr  5 20:31 bin
+                                          ├── cat -> busybox
+drwxr-xr-x 2 root root  4096 Apr  5 20:37 dev
+drwxr-xr-x 3 root root  4096 Apr  5 20:39 etc
+                                          ├── fstab
+                                          ├── init.d
+                                          │   └── rcS
+                                          ├── inittab
+                                          └── profile
+drwxr-xr-x 2 root root  4096 Apr  5 20:37 lib
+lrwxrwxrwx 1 root root    11 Apr  5 20:31 linuxrc -> bin/busybox
+drwx------ 2 root root 16384 Apr  5 20:36 lost+found
+drwxr-xr-x 2 root root  4096 Apr  5 20:37 mnt
+drwxr-xr-x 2 root root  4096 Apr  5 20:37 proc
+drwxr-xr-x 2 root root  4096 Apr  5 20:31 sbin
+drwxr-xr-x 2 root root  4096 Apr  5 20:37 sys
+```
+
+接下来就不需要挂载的虚拟磁盘了
+
+```shell
+$ sudo umount /tmp/rootfs-busybox
+```
+
+通过qeum启动 
+```shell
+sudo qemu-system-x86_64 -kernel linux/arch/x86/boot/bzImage -append 'root=/dev/sda' -boot c -hda rootfs.img -k en-us 
+```
+
+> Block device options:  
+> -fda/-fdb file  use 'file' as floppy disk 0/1 image  
+> -hda/-hdb file  use 'file' as IDE hard disk 0/1 image  
+> -hdc/-hdd file  use 'file' as IDE hard disk 2/3 image  
+> -cdrom file     use 'file' as IDE cdrom image (cdrom is ide1 master)  
+
+<br>
+<div align=center>
+    <img src="../../res/kernel-debug2.png" width="40%" height="40%"></img>  
+</div>
+<br>
+
+> 使用文件系统启动后，会停止kernerl打印，输入指令   
+> 使用ctrl+alt+2切换qemu控制台,使用ctrl+alt+1切换回调试kernel  
+
+
+- ### 向文件系统增加程序并调试  
+
+```shell
+# 挂载
+$ mkdir /tmp/rootfs-busybox
+$ sudo mount -o loop $PWD/rootfs.img /tmp/rootfs-busybox
+# 向文件系统增加自己的程序 work/program 
+$ pushd /tmp/rootfs-busybox/
+$ mkdir work && cd work 
+$ cp /path/to/program  .    # /root/work/linux-5.13/kernel_test/test_unix_socket/test_unix_socket  测试程序  
+$ popd  
+
+# 卸载
+$ sudo umount /tmp/rootfs-busybox  
+```
+
+
+## 调试网络
+
+### 网络设备设置
+
+我们使用qemu的**bridge模式**设置虚机网络，该模式需要在宿主机配置网桥，并使用该网桥配置地址和默认路由．具体见host的`/etc/qemu-ifup`文件．
+然后使用`-net`参数启动qemu虚机．
+
+> 如果通过宿主机eth0远程登录，该操作可能导致网络登录中断． 如果使用虚拟机，可以多开几个虚拟网卡，使用非远程登录的接口    
+
+```shell
+$ sudo brctl addbr br0
+$ sudo brctl addif br0 enp0s6
+$ sudo ifconfig enp0s6 0
+$ sudo dhclient br0
+$ sudo qemu-system-x86_64 -kernel linux/arch/x86/boot/bzImage \
+       -append 'root=/dev/sda' -boot c -hda rootfs.img -k en-us \
+       -net nic -net tap,ifname=tap0  
+```
+
+`tap0`是在宿主机中对应的接口名．我们可以在宿主机中看到网桥及其两个端口．tap设备的另一端是VM的eth0．
+
+```shell
+$ brctl show
+bridge name	bridge id		STP enabled	interfaces
+br0		8000.001c42b3acf8	no		enp0s6
+virbr0		8000.5254000ab2bb	yes		virbr0-nic
+```
+
+为简单测试VM和宿主机的网络联通性，我们在宿主机的`br0`和虚机的`eth0`分别配置两个私有地址来测试．
+
+```shell
+# qemu VM（调试Kernel）
+/ # ip addr add 192.168.0.2/24 dev eth0 
+/ # ip link set eth0 up
+```
+
+```shell
+# 宿主机
+$ sudo ip addr add 192.168.0.1/24 dev br0
+$ ping 192.168.0.2
+PING 192.168.0.2 (192.168.0.2) 56(84) bytes of data.
+64 bytes from 192.168.0.2: icmp_seq=1 ttl=64 time=0.328 ms
+64 bytes from 192.168.0.2: icmp_seq=2 ttl=64 time=0.282 ms
+... ...
+```
+
+```shell
+# qemu VM（调试Kernel）
+$ ping 192.168.0.1
+PING 192.168.0.2 (192.168.0.1) 56(84) bytes of data.
+64 bytes from 192.168.0.2: icmp_seq=1 ttl=64 time=0.328 ms
+64 bytes from 192.168.0.2: icmp_seq=2 ttl=64 time=0.282 ms
+... ...
+```
+
+这样可以基本满足调试Kernel的网络协议栈的环境了.
+
+> 或者在VM中运行`udhcpc eth0`让VM获取和host相同网络的IP，不过这需要DHCP Server的支持．
+
+## 使用nfs挂载rootfs 
+
+> NFS 是Network File System的缩写，即网络文件系统。一种使用于分散式文件系统的协定，由Sun公司开发，于1984年向外公布。功能是通过网络让不同的机器、不同的操作系统能够彼此分享个别的数据，让应用程序在客户端通过网络访问位于服务器磁盘中的数据，是在类Unix系统间实现磁盘文件共享的一种方法。  
+
+调试内核模块（或其他用户态程序的时候），挂载静态的ext3文件系统并不方便．为此我们可以采用nfs的形式挂载qemu kernel的rootfs，这样就能方便的在host中修改，编译内核模块，并在qemu kernel中配合gdb进行调试．根文件系统制作方法和之前相同，  
+
+```
+# working dir
+$ mkdir rootfs.nfs
+$ cp -a ../busybox-1.32.0/_install/* rootfs.nfs/
+$ pushd rootfs.nfs/
+$ mkdir dev sys proc etc lib mnt
+$ popd
+$ cp -a ../busybox-1.32.0/examples/bootfloppy/etc/* rootfs.nfs/etc/
+$ cat rootfs.nfs/etc/init.d/rcS   # 修改文件如下: 
+#! /bin/sh
+
+/bin/mount -a
+/bin/mount -t sysfs sysfs /sys
+/bin/mount -t tmpfs tmpfs /dev
+/sbin/mdev -s
+
+$ chmod -R 777 rootfs.nfs/
+```
+
+配置host的nfs服务并启动,
+
+```shell
+$ sudo apt-get install nfs-kernel-server
+$ cat /etc/exports   # 修改如下
+/path/to/working/dir/rootfs.nfs *(rw,insecure,sync,no_root_squash)
+
+$ service nfs-kernel-server restart
+```
+
+使用nfs挂载qemu Kernel的根文件系统
+
+```
+$ sudo qemu-system-x86_64 -kernel linux/arch/x86/boot/bzImage \
+        -append 'root=/dev/nfs nfsroot="192.168.1.1:/path/to/working/dir/rootfs.nfs/" rw ip=192.168.1.2' \
+	-boot c -k en-us -net nic -net tap,ifname=tap0
+```
+
+其中`nfsroot`为host的IP及要挂载的根文件系统在host中的路径，`ip`参数填写qemu Kernel将使用的IP地址．
+
+### 调试内核模块
+
+> Note: 编译内核模块的时候，源码树和虚机Kernel编译需要是同一份．不然会出现模块版本不匹配无法运行的情况. 编译内核模块的时候，使用`ccflags-y += -g -O0`保留信息避免优化．
+
+Kernel模块每次插入后的内存位置不确定，需要将其各个内存段的位置取出才能按源码单步调试． 首先在`do_init_module`设置断点, insmod的时候会触发断点，
+
+```gdb
+(gdb) b do_init_module
+```
+
+模块各内存段信息保存在`mod->sect_attrs->attrs[]`数组中，我们需要以下几个字段信息,
+
+* `.text`
+* `.rodata`
+* `.bss`
+
+分别打印字段的名字和其地址，
+
+```gdb
+(gdb) print  mod->sect_attrs->attrs[1].name
+$82 = 0xffff880006109ad8 <__this_cpu_preempt_check> ".text"
+(gdb) print  mod->sect_attrs->attrs[5].name
+$86 = 0xffff880006109ad0 <__phys_addr_nodebug+10> ".rodata"
+(gdb) print  mod->sect_attrs->attrs[12].name
+$93 = 0xffff880006109ac8 <__phys_addr_nodebug+2> ".bss"
+
+(gdb) print /x  mod->sect_attrs->attrs[1]->address
+$96 = 0xffffffffa0005000
+(gdb) print /x  mod->sect_attrs->attrs[5]->address
+$97 = 0xffffffffa0006040
+(gdb) print /x  mod->sect_attrs->attrs[12]->address
+$98 = 0xffffffffa0007380
+```
+
+然后为gdb设置模块路径和各内存段地址，
+
+```gdb
+(gdb) add-symbol-file /path/to/module/xxx.ko 0xffffffffa0005000 \
+-s .data 0xffffffffa0006040 \
+-s .bss 0xffffffffa0007380
+```
+
+接下来，就能为模块的各个函数设置断点进行调试了．
+
+
 - #### 参考文章1 [搭建 Linux 内核网络调试环境](https://zhuanlan.zhihu.com/p/445453676)  
 - #### 参考文章2 [使用 GDB + Qemu 调试 Linux 内核](https://z.itpub.net/article/detail/9CCD29B78F55B5BEA664AD7045915411)  
 - #### [linux内核其他调试环境](../../md/other/linux-core-debug.md) 
 - #### [gdb-kernel-debugging](https://www.kernel.org/doc/html/v4.11/dev-tools/gdb-kernel-debugging.html)
+- #### [kernel-qemu-gdb](https://github.com/beacer/notes/blob/master/kernel/kernel-qemu-gdb.md)  
