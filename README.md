@@ -26,7 +26,7 @@
     - [网络轮询器(NetPoller)](md/base/concurrent/net-poller.md)
 
   - **反射**
-    - [反射基础介绍](https://github.com/ymm135/go-coding/blob/main/lang/reflect/README.md)  
+    - [反射基础介绍](md/base/reflect/reflect-base.md)  
     - [静态代理](md/base/reflect/static-proxy.md)
 
   - [**go编译器和链接器**](https://github.com/ymm135/go-build)  
