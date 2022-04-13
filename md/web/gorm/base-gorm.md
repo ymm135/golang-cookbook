@@ -124,7 +124,7 @@ func (db *DB) First(dest interface{}, conds ...interface{}) (tx *DB) {
 > `db.Statement.SQL.buf` 的值为 `SELECT id, name, age FROM users WHERE id = ?` 
 
 `Dest`内容  
-```
+```go
 Dest = {interface{} | *main.User} 
  Name = {string} ""
  Age = {int} 0
@@ -132,7 +132,7 @@ Dest = {interface{} | *main.User}
 ```
 
 查看执行计划: 
-```
+```go
 func (p *processor) Execute(db *DB) *DB {
 	...
 	var (
@@ -171,7 +171,7 @@ func (p *processor) Execute(db *DB) *DB {
 最后要填充的内容 `stmt.ReflectValue = stmt.ReflectValue.Elem()           // stmt.ReflectValue`
 
 find查询语句执行的方法,通过`f(db)`依次调用方法:
-```
+```go
 fns = {[]func(*gorm.DB)} len:3, cap:4
  0 = {func(*gorm.DB)} gorm.io/gorm/callbacks.Query
  1 = {func(*gorm.DB)} gorm.io/gorm/callbacks.Preload
@@ -203,7 +203,7 @@ func Query(db *gorm.DB) {
 ```
 
 `gorm@v1.23.4/scan.go` 
-```
+```go
 // Scan scan rows into db statement
 func Scan(rows Rows, db *DB, mode ScanMode) {
 	var (
@@ -299,7 +299,7 @@ func (db *DB) scanIntoStruct(rows Rows, reflectValue reflect.Value, values []int
 ```
 `db.AddError(field.Set(db.Statement.Context, reflectValue, values[idx]))`  调用的是:  
 
-```
+```go
 // create valuer, setter when parse struct
 func (field *Field) setupValuerAndSetter() {
 	case reflect.String:
@@ -422,8 +422,6 @@ func (db *DB) Model(value interface{}) (tx *DB) {
 func (stmt *Statement) Parse(value interface{}) (err error) {
 	return stmt.ParseWithSpecialTableName(value, "")
 }
-
-
 ```
 
 
@@ -449,7 +447,7 @@ func (p *processor) Execute(db *DB) {
 ```
 
 find查询语句执行的方法,通过`f(db)`依次调用方法:
-```
+```go
 fns = {[]func(*gorm.DB)} len:3, cap:4
  0 = {func(*gorm.DB)} gorm.io/gorm/callbacks.Query
  1 = {func(*gorm.DB)} gorm.io/gorm/callbacks.Preload
@@ -563,7 +561,7 @@ func Scan(rows *sql.Rows, db *DB, initialized bool) {
 
 <br>
 <div align=center>
-    <img src="../../../res/gorm filed.png" width="80%" height="80%"></img>  
+    <img src="../../../res/gorm filed.png" width="100%" height="100%"></img>  
 </div>
 <br>
 
@@ -655,7 +653,7 @@ db.Joins("JOIN emails ON emails.user_id = users.id AND emails.email = ?", "jinzh
 - ### Raw SQL  
 
 `callbacks/row.go`  
-```
+```go
 func RowQuery(db *gorm.DB) {
 	if db.Error == nil {
 		BuildQuerySQL(db)
