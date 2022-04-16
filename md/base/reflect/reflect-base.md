@@ -365,7 +365,7 @@ type Type interface {
 ```
 
 ## 实际开发中应用  
-- ### 每次都需要写sql查询语句条件，能不能根据结构体中tag及数据类型，自动生成(Int/String/Slice)  
+- ### 每次都需要写sql查询语句条件，能不能根据结构体中tag及数据类型，自动生成(Int/String/Slice)数据类型sql条件    
 
 ```go
 package main
@@ -495,7 +495,7 @@ func GenerateWhereSql(s interface{}) string {
 
 运行结果: 
 
-```shell
+```sql
  where 1=1  and threatName = 'TestTreat' and category = 'ddd' and signatureId in  ( 2, 4 )   
 ```
 
