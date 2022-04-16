@@ -364,6 +364,141 @@ type Type interface {
 }
 ```
 
+## 实际开发中应用  
+- ### 每次都需要写sql查询语句条件，能不能根据结构体中tag及数据类型，自动生成(Int/String/Slice)  
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+)
+
+type Level int
+
+//威胁规则列表展示内容
+type ThreatRuleList struct {
+	ThreatName   string `json:"threatName" where:"threatName"`                    // 威胁名称
+	Category     string `json:"category" gorm:"column:category" where:"category"` // 分类
+	PublishDate  string `json:"publishDate" gorm:"column:publishDate"`            // 发布日期
+	RiskLevel    Level  `json:"riskLevel" gorm:"column:riskLevel"`                // 威胁等级
+	Status       int    `json:"status" sql:"status"`                              // 规则开启状态
+	SignatureIds []int  `json:"signatureId" where:"signatureId"`                  // sid
+}
+
+func main() {
+	s := make([]int, 2)
+	s[0] = 2
+	s[1] = 4
+
+	t := ThreatRuleList{
+		ThreatName:   "TestTreat",
+		Status:       1,
+		Category:     "ddd",
+		SignatureIds: s,
+	}
+
+	fmt.Println(GenerateWhereSql(t))
+}
+
+const TAG_NAME = "where"
+
+// 通过遍历结构体内每个字段，生成where sql语句
+// 比如结构体内有A,B两个成员，where A = ? And B = ?
+// 优先获取gorm:"column:threatName" 再是 json
+func GenerateWhereSql(s interface{}) string {
+	// 首先获取结构体内所有的成员
+	if s == nil {
+		return ""
+	}
+
+	sV := reflect.ValueOf(s)
+	sT := reflect.TypeOf(s)
+
+	if sV.Kind() == reflect.Ptr {
+		sV = sV.Elem()
+	}
+
+	if sT.Kind() == reflect.Ptr {
+		sT = sT.Elem()
+	}
+
+	sql := " where 1=1 "
+	numField := sV.NumField() // 使用反射获取结构体的成员类型 NumField() 和 Field()
+	for i := 0; i < numField; i++ {
+		svFieldVal := sV.Field(i)
+		stFieldVal := sT.Field(i)
+
+		// 先获取gorm的字段
+		gormTag := stFieldVal.Tag.Get(TAG_NAME)
+		if len(gormTag) == 0 {
+			continue
+		}
+
+		kind := svFieldVal.Kind()
+		value := ""
+		switch kind {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			intVal := svFieldVal.Int()
+			if intVal != -1 { // 如果值为-1， 那就不作为where条件
+				value = strconv.Itoa(int(intVal))
+			}
+		case reflect.String:
+			value = "'" + svFieldVal.String() + "'"
+		case reflect.Slice:
+			length := svFieldVal.Len()
+			if length == 0 {
+				continue
+			}
+
+			sliceValType := reflect.Invalid
+
+			value = " ( "
+			for i := 0; i < length; i++ {
+
+				sliceVal := svFieldVal.Index(i) // 获取切片存储的数据类型
+				if sliceValType == reflect.Invalid {
+					sliceValType = sliceVal.Kind()
+				}
+				switch sliceValType {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					value += strconv.Itoa(int(sliceVal.Int()))
+				case reflect.String:
+					strVal := sliceVal.String()
+					if len(strVal) != 0 {
+						value += "'" + strVal + "'"
+					}
+				}
+
+				if i < length-1 {
+					value += ", "
+				}
+			}
+			value += " ) "
+		}
+
+		if len(value) != 0 {
+			if kind == reflect.Slice {
+				sql += " and " + gormTag + " in " + value
+			} else {
+				sql += " and " + gormTag + " = " + value
+			}
+		}
+	}
+
+	return sql
+}
+
+``` 
+
+运行结果: 
+
+```shell
+ where 1=1  and threatName = 'TestTreat' and category = 'ddd' and signatureId in  ( 2, 4 )   
+```
+
 
 
 
