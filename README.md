@@ -47,6 +47,7 @@
   - **mysql** 
     - [mysql 5.7源码调试](md/middleware/mysql/mysql-debug-source.md)  
     - [myql 基础知识](md/middleware/mysql/mysql-base.md)  
+    - [myql 高级进阶](md/middleware/mysql/mysql-advance.md)  
   - **nginx**
     - [nginx基础](md/middleware/nginx/nginx-base.md)  
 
