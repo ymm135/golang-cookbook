@@ -68,6 +68,7 @@
     - [redis3.0数据结构](./md/middleware/redis/redis-data-structure.md)  
     - [redis4.x数据结构](./md/middleware/redis/redis4-data-structure.md)
     - [redis持久化](./md/middleware/redis/redis-db.md)  
+    - [redis数据统计分析](./md/middleware/redis/redis-statistic-analysis.md)  
 
   - **mongo**  
     - [mongo基础](md/middleware/mongo/mongo-base.md)  
