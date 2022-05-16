@@ -3,7 +3,7 @@
 
 # 用于日常开发的知识  
 ## 存储引擎  
-MySQL5.0支持的存储引擎包括 `MyISAM`、`InnoDB`、`BDB`、`MEMORY`、`MERGE`、`EXAMPLE`、`NDBCluster`、`ARCHIVE`、`CSV`、`BLACKHOLE`、`FEDERATED`等，其中I`nnoDB`和`BDB`提供事务安全表，其他存储引擎都是非事务安全表。  
+MySQL5.0支持的存储引擎包括 `MyISAM`、`InnoDB`、`BDB`、`MEMORY`、`MERGE`、`EXAMPLE`、`NDBCluster`、`ARCHIVE`、`CSV`、`BLACKHOLE`、`FEDERATED`等，其中`InnoDB`和`BDB`提供事务安全表，其他存储引擎都是非事务安全表。  
 创建新表时如果不指定存储引擎，那么系统就会使用默认存储引擎，MySQL5.5之前的默认存储引擎是MyISAM，5.5之后改为了`InnoDB`。如果要修改默认的存储引擎，可以在参数文件中设置default-table-type。查看当前的默认存储引擎，可以使用以下命令：  
 
 ```shell
@@ -43,6 +43,184 @@ mysql> show engines;
     <img src="../../../res/mysql-engine-feature.png" width="80%" height="80%" ></img>  
 </div>
 <br>
+
+## [InnoDB](https://dev.mysql.com/doc/refman/5.7/en/innodb-storage-engine.html)  
+### 整体架构
+<br>
+<div align=center>
+    <img src="../../../res/innodb-architecture.png" width="100%" height="100%" ></img>  
+</div>
+<br>
+
+### 内存中结构
+#### 缓冲池(Buffer Pool) 
+缓冲池是主内存中的一个区域，用于在 InnoDB`访问表`和`索引数据`时对其进行缓存。缓冲池允许直接从内存中访问经常使用的数据，从而加快处理速度。在专用服务器上，高达 80% 的物理内存通常分配给缓冲池。
+
+为了提高大容量读取操作的效率，缓冲池被划分为可能包含多行的页面。为了缓存管理的效率，缓冲池被实现为`页链表`；很少使用的数据使用 LRU 算法的变体从缓存中老化。  
+
+了解如何利用缓冲池将频繁访问的数据保存在内存中是 MySQL 调优的一个重要方面。  
+
+```sql
+SHOW ENGINE INNODB STATUS
+
+BUFFER POOL AND MEMORY
+----------------------
+Total large memory allocated 137428992
+Dictionary memory allocated 688795
+Buffer pool size   8191
+Free buffers       1024
+Database pages     7077
+Old database pages 2592
+Modified db pages  0
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 2886810, not young 270955789
+0.00 youngs/s, 0.00 non-youngs/s
+Pages read 23938015, created 176173, written 1046057
+0.00 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 1000 / 1000, young-making rate 13 / 1000 not 0 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 7077, unzip_LRU len: 0
+I/O sum[14]:cur[0], unzip sum[0]:cur[0]
+```
+
+```sql
+mysql> SELECT * FROM information_schema.INNODB_BUFFER_POOL_STATS \G;
+*************************** 1. row ***************************
+                         POOL_ID: 0
+                       POOL_SIZE: 8191
+                    FREE_BUFFERS: 1024
+                  DATABASE_PAGES: 7077
+              OLD_DATABASE_PAGES: 2592
+         MODIFIED_DATABASE_PAGES: 0
+              PENDING_DECOMPRESS: 0
+                   PENDING_READS: 0
+               PENDING_FLUSH_LRU: 0
+              PENDING_FLUSH_LIST: 0
+                PAGES_MADE_YOUNG: 2886808
+            PAGES_NOT_MADE_YOUNG: 270955789
+           PAGES_MADE_YOUNG_RATE: 0
+       PAGES_MADE_NOT_YOUNG_RATE: 0
+               NUMBER_PAGES_READ: 23938015
+            NUMBER_PAGES_CREATED: 176173
+            NUMBER_PAGES_WRITTEN: 1046043
+                 PAGES_READ_RATE: 0
+               PAGES_CREATE_RATE: 0
+              PAGES_WRITTEN_RATE: 0
+                NUMBER_PAGES_GET: 424101556
+                        HIT_RATE: 0
+    YOUNG_MAKE_PER_THOUSAND_GETS: 0
+NOT_YOUNG_MAKE_PER_THOUSAND_GETS: 0
+         NUMBER_PAGES_READ_AHEAD: 2916964
+       NUMBER_READ_AHEAD_EVICTED: 297961
+                 READ_AHEAD_RATE: 0
+         READ_AHEAD_EVICTED_RATE: 0
+                    LRU_IO_TOTAL: 0
+                  LRU_IO_CURRENT: 0
+                UNCOMPRESS_TOTAL: 0
+              UNCOMPRESS_CURRENT: 0
+1 row in set (0.00 sec)
+```
+
+#### Change Buffer
+
+
+```sql
+mysql> SHOW ENGINE INNODB STATUS\G
+
+-------------------------------------
+INSERT BUFFER AND ADAPTIVE HASH INDEX
+-------------------------------------
+Ibuf: size 1, free list len 9, seg size 11, 93 merges
+merged operations:
+ insert 535, delete mark 806, delete 0
+discarded operations:
+ insert 0, delete mark 0, delete 0
+Hash table size 34673, node heap has 1 buffer(s)
+Hash table size 34673, node heap has 1 buffer(s)
+Hash table size 34673, node heap has 2 buffer(s)
+Hash table size 34673, node heap has 81 buffer(s)
+Hash table size 34673, node heap has 2 buffer(s)
+Hash table size 34673, node heap has 1 buffer(s)
+Hash table size 34673, node heap has 1 buffer(s)
+Hash table size 34673, node heap has 1 buffer(s)
+0.00 hash searches/s, 0.00 non-hash searches/s
+```
+
+### 硬盘中结构
+#### Table 
+InnoDB使用 `CREATE TABLE` 语句创建表；例如： 
+
+```
+CREATE TABLE t1 (a INT, b CHAR (20), PRIMARY KEY (a)) ENGINE=InnoDB;
+```
+
+`.frm` 文件
+MySQL 将表的数据字典信息存储 在数据库目录中的.frm 文件中。与其他 MySQL 存储引擎不同， InnoDB它还将有关表的信息编码在系统表空间内自己的内部数据字典中。当 MySQL 删除表或数据库时，它会删除一个或多个.frm文件以及InnoDB数据字典中的相应条目。您不能InnoDB仅通过移动.frm 文件来在数据库之间移动表。
+
+查看`test`数据库的`t1`表的信息
+```sql
+mysql> SHOW TABLE STATUS FROM test LIKE 't%' \G;
+*************************** 1. row ***************************
+           Name: t1
+         Engine: InnoDB
+        Version: 10
+     Row_format: Dynamic
+           Rows: 0
+ Avg_row_length: 0
+    Data_length: 16384
+Max_data_length: 0
+   Index_length: 0
+      Data_free: 0
+ Auto_increment: NULL
+    Create_time: 2022-05-16 15:20:31
+    Update_time: NULL
+     Check_time: NULL
+      Collation: utf8mb4_croatian_ci
+       Checksum: NULL
+ Create_options: 
+        Comment: 
+```
+
+```sql
+mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_SYS_TABLES WHERE NAME='test/t1' \G
+*************************** 1. row ***************************
+     TABLE_ID: 215
+         NAME: test/t1
+         FLAG: 33
+       N_COLS: 5
+        SPACE: 257
+  FILE_FORMAT: Barracuda
+   ROW_FORMAT: Dynamic
+ZIP_PAGE_SIZE: 0
+   SPACE_TYPE: Single
+1 row in set (0.00 sec)
+```
+
+#### Index 
+每个InnoDB表都有一个特殊的索引，称为`聚集索引`，用于存储行数据。通常，聚集索引与主键同义。为了从查询、插入和其他数据库操作中获得最佳性能，了解如何InnoDB使用聚集索引来优化常见的查找和 DML 操作非常重要。
+
+`PRIMARY KEY`在表上 定义 a时，InnoDB将其用作聚集索引。应该为每个表定义一个主键。如果没有逻辑唯一且非空的列或列集来使用主键，请添加一个自动增量列。自动增量列值是唯一的，并在插入新行时自动添加。
+
+如果您没有`PRIMARY KEY`为表定义 a，InnoDB则使用第一个 `UNIQUE` 索引，其中所有键列都定义为`NOT NULL`聚集索引。
+
+如果表没有索引PRIMARY KEY或没有合适 的UNIQUE索引，则InnoDB 生成一个隐藏的聚集索引 ，该索引以`GEN_CLUST_INDEX`包含行 ID 值的合成列命名。行按InnoDB分配的行 ID 排序。行 ID 是一个 6 字节的字段，随着新行的插入而单调增加。因此，按行 ID 排序的行在物理上是按插入顺序排列的。
+
+- 聚集索引如何加速查询  
+
+通过聚集索引访问行很快，因为索引搜索直接指向包含`行数据的页面`。如果表很大，与使用与索引记录不同的页面存储行数据的存储组织相比，聚集索引架构通常会节省磁盘 I/O 操作。
+
+- 二级索引与聚集索引的关系
+
+聚集索引以外的索引称为`二级索引`。在InnoDB中，二级索引中的每条记录都包含该行的主键列，以及为二级索引指定的列。 InnoDB使用此主键值在聚集索引中搜索行。
+
+如果主键长，二级索引占用的空间就更多，所以主键短是有利的。
+
+
+- 大小
+
+除空间索引外，InnoDB 索引都是`B-tree`数据结构。空间索引使用 `R-trees`，这是用于索引多维数据的专用数据结构。索引记录存储在其 `B` 树或 `R` 树数据结构的叶页中。索引页的默认大小为 16KB。页面大小由 innodb_page_sizeMySQL 实例初始化时的设置决定。  
+  
 
 
 ## 数据类型 

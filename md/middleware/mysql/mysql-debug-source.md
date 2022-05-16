@@ -145,8 +145,6 @@ chown -R mysql:mysql /var/log/mysql/
 
 - #### 手动启动mysql 
 
-``
-
 ```shell
 # mysqld --verbose --help 
 
@@ -252,6 +250,10 @@ mysql> select User,authentication_string,Host from mysql.user;
 > root 有两个用户，本地用户没有密码，远程访问的有密码  
 
 ## vscode 调试 
+[mysql服务端调试官方文档](https://dev.mysql.com/doc/refman/8.0/en/making-trace-files.html)  
+
+[调试mysql客户端](https://dev.mysql.com/doc/refman/8.0/en/debugging-client.html)  
+`mysql --debug=d:t:O,/tmp/client.trace`   
 
 客户端main方法: `client/mysql.cc`
 服务端main方法: `sql/mysqld.cc`
@@ -274,7 +276,7 @@ int mysqld_main(int argc, char **argv)
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/sql/mysqld",
-            "args": ["--defaults-file=/etc/my.cnf", "--datadir=/data/mysql/data"],
+            "args": ["--defaults-file=/etc/my.cnf", "--datadir=/data/mysql/data", "--debug=d,info,error,query,general,where:O,/tmp/mysqld.trace"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -305,6 +307,80 @@ vscode 调试视图
     <img src="../../../res/mysql-debug.png" width="100%" height="100%" ></img>  
 </div>
 <br>
+
+增加调试日志`--debug=d,info,error,query,general,where:O,/tmp/mysqld.trace`  
+查看日志文件`select * from employees limit 1`: 
+
+```shell
+my_realpath: info: executing realpath
+open_binary_frm: info: default_part_db_type = 0
+intern_plugin_lock: info: thd: 0x7fffbc000d80, plugin: "InnoDB", ref_count: 17
+intern_plugin_lock: info: thd: 0x7fffbc000d80, plugin: "InnoDB", ref_count: 18
+open_binary_frm: info: extra segment size is 35 bytes
+intern_plugin_lock: info: thd: 0x7fffbc000d80, plugin: "InnoDB", ref_count: 19
+open_binary_frm: info: Found format section
+open_binary_frm: info: format_section_length: 15, format_section_flags: 0
+open_binary_frm: info: tablespace: '<null>'
+open_binary_frm: info: i_count: 1  i_parts: 3  index: 1  n_length: 58  int_length: 6  com_length: 0  gcol_screen_length: 0
+get_new_handler: info: handler created F_UNLCK 2 F_RDLCK 0 F_WRLCK 1
+get_new_handler: info: handler created F_UNLCK 2 F_RDLCK 0 F_WRLCK 1
+handler::ha_open: info: old m_lock_type: 2 F_UNLCK 2
+column_bitmaps_signal: info: read_set: 0x7fffbc00f428  write_set: 0x7fffbc00f448
+column_bitmaps_signal: info: read_set: 0x7fffbc039d70  write_set: 0x7fffbc039d70
+Protocol_classic::start_result_metadata: info: num_cols 6, flags 2
+Protocol_classic::end_result_metadata: info: num_cols 6, flags 2
+close_thread_tables: info: thd->open_tables: 0x7fffbc00f320
+MDL_context::release_locks_stored_before: info: found lock to release ticket=0x7fffbc03abf0
+net_send_ok: info: affected_rows: 0  id: 0  status: 2  warning_count: 0
+net_send_ok: info: OK sent, so no more error sending allowed
+do_command: info: Command on socket (51) = 3 (Query)
+do_command: info: packet: ''; command: 3
+dispatch_command: info: command: 3
+dispatch_command: query: select * from employees limit 1
+
+gtid_pre_statement_checks: info: gtid_next->type=0 owned_gtid.{sidno,gno}={0,0}
+mysql_execute_command: info: derived: 0  view: 0
+column_bitmaps_signal: info: read_set: 0x7fffbc00f428  write_set: 0x7fffbc00f448
+Field_iterator_table_ref::set_field_iterator: info: field_it for 'employees' is Field_iterator_table
+SELECT_LEX::prepare: info: setup_ref_array this 0x7fffbc005ae0   40 :    0    0    6    1    1    0
+setup_fields: info: thd->mark_used_columns: 1
+setup_fields: info: thd->mark_used_columns: 1
+SELECT_LEX::setup_conds: info: thd->mark_used_columns: 1
+get_lock_data: info: count 1
+get_lock_data: info: sql_lock->table_count 1 sql_lock->lock_count 0
+mysql_lock_tables: info: thd->proc_info System lock
+lock_external: info: count 1
+THD::decide_logging_format: info: query: select * from employees limit 1
+THD::decide_logging_format: info: variables.binlog_format: 2
+THD::decide_logging_format: info: lex->get_stmt_unsafe_flags(): 0x1
+THD::decide_logging_format: info: decision: no logging since mysql_bin_log.is_open() = 0 and (options & OPTION_BIN_LOG) = 0x40000 and binlog_format = 2 and binlog_filter->db_ok(db) = 1
+THD::is_classic_protocol: info: type=0
+
+WHERE:(constants) (nil) 
+
+WHERE:(employees) (nil) 
+
+WHERE:(employees) (nil) 
+
+Info about JOIN
+employees         type: ALL      q_keys: 0  refs: 0  key: -1  len: 0
+JOIN::make_tmp_tables_info: info: Using end_send
+JOIN::exec: info: Sending data
+Protocol_classic::start_result_metadata: info: num_cols 6, flags 5
+Protocol_classic::end_result_metadata: info: num_cols 6, flags 5
+init_read_record: info: using rr_sequential
+my_realpath: info: executing realpath
+my_realpath: info: executing realpath
+do_select: info: 1 records output
+ha_commit_trans: info: all=0 thd->in_sub_stmt=0 ha_info=0x7fffbc0022a8 is_real_trans=1
+close_thread_tables: info: thd->open_tables: 0x7fffbc00f320
+MDL_context::release_locks_stored_before: info: found lock to release ticket=0x7fffbc03abf0
+intern_plugin_unlock: info: unlocking plugin, name= InnoDB, ref_count= 19
+intern_plugin_unlock: info: unlocking plugin, name= InnoDB, ref_count= 18
+dispatch_command: info: query ready
+net_send_ok: info: affected_rows: 0  id: 0  status: 34  warning_count: 0
+net_send_ok: info: OK sent, so no more error sending allowed
+```
 
 
 ## mysql 通信数据包  
