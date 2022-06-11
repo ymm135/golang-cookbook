@@ -239,6 +239,8 @@ User root
 }
 ```
 
+> vmlinux文件是未经压缩的内核映像，存在于源代码树的根目录。zImage或bzImage都是压缩过的  
+
 增加好断点: `init/main.c:876 start_kernel函数`和`net/ipv4/tcp_ipv4.c:199 tcp_v4_connect函数`  
 然后在qemu启动的内核窗口中输入`s`和`c`启动服务端和客户端   
 
@@ -605,3 +607,230 @@ $98 = 0xffffffffa0007380
 - #### [linux内核其他调试环境](../../md/other/linux-core-debug.md) 
 - #### [gdb-kernel-debugging](https://www.kernel.org/doc/html/v4.11/dev-tools/gdb-kernel-debugging.html)
 - #### [kernel-qemu-gdb](https://github.com/beacer/notes/blob/master/kernel/kernel-qemu-gdb.md)  
+
+# raspi4 debug kernel 
+> 整体配置项:`sudo raspi-config`    
+
+## 内核编译(64bit)
+
+### 场景
+- 编写了一些特定于 Raspberry Pi 的代码，希望每个人都能从中受益
+- 您为设备编写了通用 Linux 内核驱动程序并希望每个人都使用它
+- 您已经修复了一个通用内核错误
+- 您已修复 Raspberry Pi 特定的内核错误 
+- Debug and Learn  
+
+### 源码  
+查看内核版本: `uname -a`
+```shell
+Linux raspberrypi 5.10.92-v7l+ #1514 SMP Mon Jan 17 17:38:03 GMT 2022 armv7l GNU/Linux
+```
+
+[github](https://github.com/raspberrypi/linux)  
+
+### [编译](https://www.raspberrypi.com/documentation/computers/linux_kernel.html#updating-your-kernel)   
+安装依赖:
+```
+sudo apt install git bc bison flex libssl-dev make libc6-dev libncurses5-dev
+sudo apt install crossbuild-essential-arm64
+```
+
+> libssl-dev : Depends: libssl3 (= 3.0.2-0ubuntu1.1) but 3.0.2-0ubuntu1.2 is to be installed  
+> apt install libssl3=3.0.2-0ubuntu1.1 
+
+下载代码,也可以使用离线源码文件:   
+```shell
+git clone --depth=1 https://github.com/raspberrypi/linux
+```
+
+#### kernel配置
+
+进入源码配置:  
+
+
+`64-bit build configuration`  
+```shell
+cd linux
+KERNEL=kernel8
+make ARCH=arm64 bcm2711_defconfig
+```
+
+输出
+```
+root@raspberrypi:~/work/linux-rpi-5.15.y# make bcm2711_defconfig
+  HOSTCC  scripts/kconfig/conf.o
+  HOSTLD  scripts/kconfig/conf
+#
+# No change to .config
+#
+```
+
+> .config 是所有配置项存储的地方  
+
+```shell
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- menuconfig
+```
+通过`make menuconfig`配置，参考[untun vscode 调试内核](https://github.com/ymm135/golang-cookbook/blob/master/md/other/ubuntu-kernel-debug.md)
+
+```
+# 下面选项如果没有选上的，选上（点击空格键），然后 save 保存设置，退出 exit。
+##################################################################
+Kernel hacking  --->
+    Compile-time checks and compiler options  ---> 
+        [*] Compile the kernel with debug info
+            [*] Provide GDB scripts for kernel debugging
+##################################################################
+```
+
+#### 编译源码  
+
+64位编译
+```shell
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules dtbs -j4
+```
+
+> 如果编译时，有很多选择项，那就表明出错了，需要重新来过。  
+
+#### 安装到SD卡  
+构建内核后，您需要将其复制到您的 Raspberry Pi 并安装模块；最好直接使用 SD 读卡器完成。 
+
+`fdisk -l`  
+```
+Disk /dev/sdb: 29.72 GiB, 31914983424 bytes, 62333952 sectors
+Disk model: Storage Device  
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0xec98da7c
+
+Device     Boot  Start      End  Sectors  Size Id Type
+/dev/sdb1         8192   532479   524288  256M  c W95 FAT32 (LBA)
+/dev/sdb2       532480 62333951 61801472 29.5G 83 Linux
+```
+
+挂载到mnt
+```
+mkdir mnt
+mkdir mnt/fat32
+mkdir mnt/ext4
+sudo mount /dev/sdb1 mnt/fat32
+sudo mount /dev/sdb2 mnt/ext4
+```
+
+接下来，将内核模块安装到 SD 卡上：
+```shell
+sudo env PATH=$PATH make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- INSTALL_MOD_PATH=mnt/ext4 modules_install
+```
+
+部分输出
+```shell
+  INSTALL mnt/ext4/lib/modules/5.15.45-v8/kernel/arch/arm64/crypto/chacha-neon.ko
+  XZ      mnt/ext4/lib/modules/5.15.45-v8/kernel/arch/arm64/crypto/chacha-neon.ko.xz
+  INSTALL mnt/ext4/lib/modules/5.15.45-v8/kernel/arch/arm64/crypto/poly1305-neon.ko
+  XZ      mnt/ext4/lib/modules/5.15.45-v8/kernel/arch/arm64/crypto/poly1305-neon.ko.xz
+  INSTALL mnt/ext4/lib/modules/5.15.45-v8/kernel/arch/arm64/lib/xor-neon.ko
+  XZ      mnt/ext4/lib/modules/5.15.45-v8/kernel/arch/arm64/lib/xor-neon.ko.xz
+  INSTALL mnt/ext4/lib/modules/5.15.45-v8/kernel/crypto/adiantum.ko
+  XZ      mnt/ext4/lib/modules/5.15.45-v8/kernel/crypto/adiantum.ko.xz
+  ...
+```
+
+安装目录: 
+```
+# ls -l linux-rpi-5.15.y/mnt/ext4/lib/modules  
+total 8
+drwxr-xr-x 3 root root 4096  4月  4 22:27 5.15.32-v8+   // 现有的
+drwxr-xr-x 3 root root 4096  6月 11 16:41 5.15.45-v8    // 将要安装的 
+```
+
+最后，将内核和设备树 blob 复制到 SD 卡上，确保备份旧内核：
+```shell
+sudo cp mnt/fat32/$KERNEL.img mnt/fat32/$KERNEL-backup.img
+sudo cp arch/arm64/boot/Image mnt/fat32/$KERNEL.img
+sudo cp arch/arm64/boot/dts/broadcom/*.dtb mnt/fat32/
+sudo cp arch/arm64/boot/dts/overlays/*.dtb* mnt/fat32/overlays/
+sudo cp arch/arm64/boot/dts/overlays/README mnt/fat32/overlays/
+sudo umount mnt/fat32
+sudo umount mnt/ext4
+```
+
+安装`gdbserver`
+```shell
+sudo apt-get -y install gdbserver  
+```
+
+```c
+#include<stdio.h>
+#include <unistd.h>
+
+int main()
+{
+   int i = 1000;
+   while(i-- > 0) {
+        printf("Sleeping for 1 second %d.\n", i);
+        sleep(1);
+   }
+   
+   return 0;
+}
+```
+
+`gcc -g -o main main.c`  
+
+使用gdbserver启动
+```shell
+# gdbserver :1234 main
+Process /root/work/test/main created; pid = 1206
+Listening on port 1234
+Remote debugging from host ::ffff:10.25.17.117, port 48737
+Remote side has terminated connection.  GDBserver will reopen the connection.
+Listening on port 1234
+```
+
+端口也有了
+```
+# netstat -ant
+Active Internet connections (servers and established) 
+tcp6       0      0 :::1234                 :::*                    LISTEN   
+```
+
+把`main`可执行文件拷贝到目标的ubuntu,这样我们就可以远程调试了
+```shell
+# gdb 
+(gdb)  target remote 10.25.16.213:1234
+Remote debugging using 10.25.16.213:1234
+warning: Can not parse XML target description; XML support was disabled at compile time
+Reading /root/work/test/main from remote target...
+warning: File transfers from remote targets can be slow. Use "set sysroot" to access files locally instead.
+Reading /root/work/test/main from remote target...
+Reading symbols from target:/root/work/test/main...
+Remote register badly formatted: T051d:0000000000000000;1f:d0fbffff7f000000;20:40d1fcf77f000000;thread:p4cd.4cd;core:2;
+here: 00000000;1f:d0fbffff7f000000;20:40d1fcf77f000000;thread:p4cd.4cd;core:2;
+(gdb) b main.c:8
+Breakpoint 1 at 0x7c8: file main.c, line 8.
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
