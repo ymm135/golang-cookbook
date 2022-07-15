@@ -813,11 +813,27 @@ Breakpoint 1 at 0x7c8: file main.c, line 8.
 
 ### vscode 日志查看 
 
+可以在`View→Output`,然后在Output面板选择日志类型  
+
 <br>
 <div align=center>
     <img src="../../res/vscode-log.png" width="100%" height="40%"></img>  
 </div>
 <br>
+
+也可以直接查看文件
+```shell
+/root/.vscode-server/data/logs/20220715T215344
+├── exthost2
+│   ├── exthost.log
+│   └── output_logging_20220715T215422
+│       ├── 1-Git.log
+│       ├── 2-Python.log
+│       ├── 3-Python\ Test\ Log.log
+│       ├── 4-Python\ Language\ Server.log
+│       ├── 5-Jupyter.log
+│       └── 6-JSON\ Language\ Server.log
+```
 
 
 
