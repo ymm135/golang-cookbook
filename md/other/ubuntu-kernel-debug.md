@@ -811,8 +811,13 @@ here: 00000000;1f:d0fbffff7f000000;20:40d1fcf77f000000;thread:p4cd.4cd;core:2;
 Breakpoint 1 at 0x7c8: file main.c, line 8.
 ```
 
+### vscode 日志查看 
 
-
+<br>
+<div align=center>
+    <img src="../../res/vscode-log.png" width="100%" height="40%"></img>  
+</div>
+<br>
 
 
 
