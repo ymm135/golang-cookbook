@@ -88,6 +88,7 @@
     - [c++基础及进阶](md/c-cpp-golang/base-c++.md)  
     - [c/c++/go对比](md/c-cpp-golang/c-c++-golang.md)  
 
-- **性能测试**  
-  - [go-perfbook](https://github.com/ymm135/go-perfbook)  
+- **性能**  
+  - [性能测试](md/performence/performance-test.md)  
+  - [性能优化go-perfbook](https://github.com/ymm135/go-perfbook)  
   - [perf-tools](https://github.com/ymm135/perf-tools)  
