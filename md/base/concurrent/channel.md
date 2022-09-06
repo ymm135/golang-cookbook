@@ -76,7 +76,15 @@ type waitq struct {
 - `sendx` — Channel 的发送操作处理到的位置；
 - `recvx` — Channel 的接收操作处理到的位置；
 
+/Users/ymm/work/mygithub/golang-cookbook/
 
+## 架构图
+
+<br>
+<div align=center>
+    <img src="../../../res/channel-struct.jpg" width="85%"></img>  
+</div>
+<br>
 
 ## 实现原理 
 源码实现在`go/src/runtime/chan.go`，目前主要关注**收发**的实现  
