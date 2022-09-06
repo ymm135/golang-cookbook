@@ -120,7 +120,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
     mysg := acquireSudog() // 
     mysg.releasetime = 0
     if t0 != 0 {
-    mysg.releasetime = -1
+    	mysg.releasetime = -1
     }
     // No stack splits between assigning elem and enqueuing mysg
     // on gp.waiting where copystack can find it.
@@ -143,7 +143,77 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 }
 ```  
 如果`recvq`队列中有等待接收的`Goroutine`, 会直接发送`Goroutine`的`elem unsafe.Pointer // data element (may point to stack)` 中  
-如果没有等待接收的`Goroutine`, 存储的代码`mysg := acquireSudog(); mysg.elem = ep; c.sendq.enqueue(mysg)`, 数据会存储在发送队列`sendq`中   
+如果没有等待接收的`Goroutine`, 存储的代码`mysg := acquireSudog(); mysg.elem = ep; c.sendq.enqueue(mysg)`, 数据会存储在发送队列`sendq`中,
+其实`sendq`就是待发送的协程等待队列，比如A、B两个协程往C协程发送数据，C处理不过来，这是按照先后顺序排队(堵塞)，等`channel`队列大小可用时，再按顺序发送  
+
+> 比如有一个channel,大小为1，有1000个协程发送数据，2个协程接收数据，很多发送协程处于block状态  
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	_ "net/http/pprof"
+	"strconv"
+	"time"
+)
+
+func main() {
+	msgQueue := make(chan string, 1)
+	go listenQueue(msgQueue, "queue1")
+	go listenQueue(msgQueue, "queue2")
+	
+	num := 1000
+	i := 0
+	for i < num {
+		go func() {
+			msgQueue <- "data" + strconv.Itoa(i)
+		}()
+		i++
+	}
+
+	fmt.Println("queue len=", len(msgQueue), ",cap=", cap(msgQueue))
+	err := http.ListenAndServe("0.0.0.0:6080", nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(" == done == ")
+}
+
+func listenQueue(queue chan string, tag string) {
+	fmt.Println("queue=", len(queue))
+	for {
+		select {
+		case msg := <-queue:
+			fmt.Println(tag, " data:", msg)
+			time.Sleep(time.Millisecond * 100)
+		}
+	}
+}
+```
+
+查看打印信息`887`线程处于发送状态
+`http://127.0.0.1:6080/debug/pprof/goroutine?debug=1`
+```shell
+goroutine profile: total 892
+887 @ 0x103b8a5 0x1006e7a 0x1006bd5 0x128e567 0x10715e1
+#	0x128e566	main.main.func1+0xa6	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:23
+```
+
+查看协程栈详情信息，看到`goroutine 7 [sleep]`状态
+`http://127.0.0.1:6080/debug/pprof/goroutine?debug=2`
+```shell
+goroutine 7 [sleep]:
+time.Sleep(0x5f5e100)
+	/usr/local/go/src/runtime/time.go:193 +0xd2
+main.listenQueue(0xc0001007e0, 0x130f83b, 0x6)
+	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:43 +0x1f2
+created by main.main
+	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:16 +0xb6
+```
+
 
 下面查看如何接收数据
 ```go
