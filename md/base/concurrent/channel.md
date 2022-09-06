@@ -148,6 +148,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 
 > 比如有一个channel,大小为1，有1000个协程发送数据，2个协程接收数据，很多发送协程处于block状态  
 
+`chan_demo2`  
 ```go
 package main
 
@@ -202,16 +203,14 @@ goroutine profile: total 892
 #	0x128e566	main.main.func1+0xa6	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:23
 ```
 
-查看协程栈详情信息，看到`goroutine 7 [sleep]`状态
+查看协程栈详情信息，看到`goroutine 175 [chan send]`状态  
 `http://127.0.0.1:6080/debug/pprof/goroutine?debug=2`
 ```shell
-goroutine 7 [sleep]:
-time.Sleep(0x5f5e100)
-	/usr/local/go/src/runtime/time.go:193 +0xd2
-main.listenQueue(0xc0001007e0, 0x130f83b, 0x6)
-	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:43 +0x1f2
+goroutine 175 [chan send]:
+main.main.func1(0xc0001067e0, 0xc00001e9e0)
+	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:20 +0xa7
 created by main.main
-	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:16 +0xb6
+	/Users/ymm/work/mygithub/unixsoket-mysql-prof/test/chan_demo2/chan_demo2.go:19 +0xf9
 ```
 
 
