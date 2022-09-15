@@ -1,7 +1,11 @@
-# 网络轮询器(NetPoller) 
+- # 网络轮询器(NetPoller) 
 网络轮询器不仅用于监控网络 `I/O`，还能用于监控文件的 `I/O`，
 它利用了操作系统提供的 `I/O` 多路复用模型来提升 `I/O` 设备的利用率以及程序的性能。  
 
+- [类型](#类型)
+- [文件](#文件)
+- [网络轮询器的实现](#网络轮询器的实现)
+- [Unix Socket](#unix-socket)
 ## 类型
 操作系统中包含阻塞 `I/O`、非阻塞 `I/O`、信号驱动 `I/O` 与异步 `I/O` 以及 `I/O` 多路复用五种 `I/O` 模型。我们在本节中会介绍上述五种模型中的三种：
 
@@ -203,6 +207,109 @@ google翻译
 // func netpollIsPollDescriptor(fd uintptr) bool
 报告 fd 是否是轮询器使用的文件描述符。 
 ```
+
+## Unix Socket
+
+
+client
+```go
+//客户端
+func (this *UnixSocket) ClientSendContext(context string) {
+	addr, err := net.ResolveUnixAddr("unixgram", this.filename)
+	if err != nil {
+		panic("Cannot resolve unix addr: " + err.Error())
+	}
+	//拔号
+	c, err := net.DialUnix("unixgram", nil, addr)
+	if err != nil {
+		panic("DialUnix failed.")
+	}
+	//写出
+	_, err = c.Write([]byte(context))
+	if err != nil {
+		panic("Writes failed.")
+	}
+}
+Footer
+
+```
+
+server
+```go
+func (this *UnixSocket) createServer() {
+	fmt.Println("socket监听执行========================================")
+	os.Remove(this.filename)
+	addr, err := net.ResolveUnixAddr("unixgram", this.filename)
+	if err != nil {
+		panic("Cannot resolve unix addr: " + err.Error())
+	}
+	c, err := net.ListenUnixgram("unixgram", addr)
+	defer c.Close()
+	if err != nil {
+		panic("Cannot listen to unix domain socket: " + err.Error())
+	}
+	os.Chmod(this.filename, 0666)
+	for {
+		data := make([]byte, 4096)
+		nr, _, err := c.ReadFrom(data)
+		if err != nil {
+			fmt.Printf("conn.ReadFrom error: %s\n", err)
+			return
+		}
+		go this.HandleServerConn(c, string(data[0:nr]))
+	}
+
+}
+```
+
+`net/unixsock.go` 源码  
+```go
+// ResolveUnixAddr returns an address of Unix domain socket end point.
+//
+// The network must be a Unix network name.
+//
+// See func Dial for a description of the network and address
+// parameters.
+func ResolveUnixAddr(network, address string) (*UnixAddr, error) {
+	switch network {
+	case "unix", "unixgram", "unixpacket":
+		return &UnixAddr{Name: address, Net: network}, nil
+	default:
+		return nil, UnknownNetworkError(network)
+	}
+}
+
+// ListenUnixgram acts like ListenPacket for Unix networks.
+//
+// The network must be "unixgram".
+func ListenUnixgram(network string, laddr *UnixAddr) (*UnixConn, error) {
+	switch network {
+	case "unixgram":
+	default:
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: UnknownNetworkError(network)}
+	}
+	if laddr == nil {
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: nil, Err: errMissingAddress}
+	}
+	sl := &sysListener{network: network, address: laddr.String()}
+	c, err := sl.listenUnixgram(context.Background(), laddr)
+	if err != nil {
+		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: err}
+	}
+	return c, nil
+}
+
+func (sl *sysListener) listenUnixgram(ctx context.Context, laddr *UnixAddr) (*UnixConn, error) {
+	fd, err := unixSocket(ctx, sl.network, laddr, nil, "listen", sl.ListenConfig.Control)
+	if err != nil {
+		return nil, err
+	}
+	return newUnixConn(fd), nil
+}
+
+func newUnixConn(fd *netFD) *UnixConn { return &UnixConn{conn{fd}} }
+```
+
 
 
 

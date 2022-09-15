@@ -71,7 +71,7 @@ func main() {
 ```
 
 断点加在go1.16.9源码的src/runtime/map.go:293 `makemap_small() *hmap`方法上  
-查看编译器参数已经禁止编译器优化: `go build -o go_build_map_struct_go -gcflags "all=-N -l"ap_struct.go #gosetup`  
+查看编译器参数已经禁止编译器优化: `go build -o go_build_map_struct_go -gcflags "all=-N -l" map_struct.go #gosetup`  
 
 make创建map调用的代码是:  
 ```go
@@ -308,6 +308,8 @@ type bmap struct {
 
 ![go-map-ds](../../../res/go-map-ds.jpg)    
   
+> int8 1个字节；int16 2个字节；int 32位/4个字节，64位8个字节  
+
 ## Hash函数
 
 ## MAP基本操作
@@ -317,6 +319,7 @@ map的创建代码是在编译时候完成的，相当于在堆上申请一块�
 
 
 ### 读取
+
 ### 删除
 ### 扩容
 

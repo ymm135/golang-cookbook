@@ -51,7 +51,7 @@ func main() {
 go mod init gotest  
 go mod tidy  
 
-go build -gcflags "-N -l // 生成gotest二进制文件  
+go build -gcflags "-N -l" // 生成gotest二进制文件  
 ``` 
 
 > -gcflags "-N -l"   

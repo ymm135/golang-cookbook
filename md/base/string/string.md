@@ -151,7 +151,16 @@ Breakpoint 1 set at 0x10cbaf2 for main.main() ./string-equal.go:8
 
 string-join.go
 ```
+package main
 
+import "fmt"
+
+func main() {
+	s1 := "Hello "
+	s2 := "World!"
+	s := s1 + s2
+	fmt.Println(s)
+}
 ```  
 [调用源码](../../../md/base/source/debug.md)  
 

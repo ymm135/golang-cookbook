@@ -1,4 +1,14 @@
-# goroutine 
+- # goroutine 
+  
+- [测试代码](#测试代码)
+- [数据结构](#数据结构)
+- [协程Goroutine](#协程goroutine)
+	- [多个协程是否在一个线程中呢? 由调度器决定](#多个协程是否在一个线程中呢-由调度器决定)
+	- [协程id获取](#协程id获取)
+- [main函数的执行流程](#main函数的执行流程)
+- [GMP 模型](#gmp-模型)
+	- [GMP 调试](#gmp-调试)
+	- [GMP之间的关系](#gmp之间的关系)
 ## 测试代码
 ```go
 func main() {
@@ -236,6 +246,36 @@ PID    COMMAND      %CPU  TIME     #TH   #WQ  #PORT MEM    PURG   CMPRS  PGRP  P
 
 19219  idea         129.1 34:53.57 82/3  5    585   3619M+ 5468K  210M-  19219 1     running  *0[811]
 ```  
+
+### 协程id获取
+```go
+package main
+
+import (
+    "bytes"
+    "fmt"
+    "runtime"
+    "strconv"
+)
+
+func main() {
+    fmt.Println(GetGID())
+}
+
+func GetGID() uint64 {
+    b := make([]byte, 64)
+    b = b[:runtime.Stack(b, false)]
+    b = bytes.TrimPrefix(b, []byte("goroutine "))
+    b = b[:bytes.IndexByte(b, ' ')]
+    n, _ := strconv.ParseUint(string(b), 10, 64)
+    return n
+}
+```
+
+输出
+```shell
+1
+```
 
 ## main函数的执行流程  
 ```go

@@ -68,7 +68,7 @@ public class MQConfig {
 超过队列上线后，直接丢弃早期数据  
 
 [设置参数及策略](https://www.rabbitmq.com/parameters.html#policies)  
-[队列上线设置](https://www.rabbitmq.com/maxlength.html)  
+[队列上限设置](https://www.rabbitmq.com/maxlength.html)  
 
 修改策略配置(队列最大消息个数为2):
 ```shell
