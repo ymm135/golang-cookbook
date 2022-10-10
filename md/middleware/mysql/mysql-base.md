@@ -240,7 +240,7 @@ ZIP_PAGE_SIZE: 0
 ## 事务控制和锁定语句  
 
 
-## 安装musql 
+## 安装mysql 
 
 - ### CentOs7 安装 Mysql5.7 
 

@@ -1,7 +1,7 @@
 # Mysql 查询流程分析 
 > 主要是了解mysql查询语句，通过主键索引查看ID后，查询表文件的具体流程是什么？耗时的主要原因？
 
-[前提知识>>InnoDB整体结构](md/middleware/mysql/mysql-base.md)  
+[前提知识>>InnoDB整体结构](mysql-base.md)  
 
 ## 测试数据 
 
