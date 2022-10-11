@@ -73,6 +73,11 @@ PASS
 ok      example.com/greetings   0.372s
 ```
 
+测试指定函数
+```shell
+go test -v greetings_test.go -test.run TestHelloEmpty
+```
+
 ## 测试失败时函数断点  
 `greetings.Hello`  
 
@@ -80,6 +85,32 @@ ok      example.com/greetings   0.372s
 
 <br>
 <div align=center>
-    <img src="../../../res/gotest-debug.jpg" width="85%"></img>  
+    <img src="../../../res/gotest-debug.png" width="85%"></img>  
 </div>
 <br>
+
+
+## 增加Flag  
+
+```go
+var (
+	enableSysTests = flag.Bool("run_system_tests", false, "Run tests that operate against the live kernel")
+)
+```
+
+```shell
+go test -v -run_system_tests true -cpuprofile=prof.out
+```
+
+内置flag
+-cpu 1,2,4   
+指定执行测试或基准的 GOMAXPROCS 值的列表。默认为GOMAXPROCS的当前值。
+
+-failfast  
+第一次测试失败后，不要再开始新的测试。
+
+-list regexp  
+列出与正则表达式匹配的测试、基准或示例。
+
+
+
