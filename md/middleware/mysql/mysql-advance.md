@@ -1,4 +1,16 @@
-# mysql 高级功能 
+- # mysql 高级功能 
+
+- [MySQL Triggers](#mysql-triggers)
+- [MySQL Views](#mysql-views)
+- [MySQL Index](#mysql-index)
+  - [创建索引](#创建索引)
+- [MySQL Full-Text Search](#mysql-full-text-search)
+- [MySQL Tips](#mysql-tips)
+  - [MySQL用户定义变量介绍](#mysql用户定义变量介绍)
+  - [MySQLSELECT INTO Variable语法](#mysqlselect-into-variable语法)
+  - [正则表达式搜索](#正则表达式搜索)
+- [MySQL Administration](#mysql-administration)
+
 ## MySQL Triggers  
 MySQL 触发器是自动执行的存储程序，以响应与表相关的特定事件，例如插入、更新或删除。本节向您展示如何有效地使用 MySQL 触发器。  
 在 MySQL 中，触发器是自动调用的存储程序，以响应关联表中发生的插入、更新或删除等事件。例如，您可以定义在将新行插入表之前自动调用的触发器。
@@ -272,6 +284,7 @@ email 其实为e/B/C的记录:
 ```
 
 ## MySQL Administration  
-在本节中，您将找到许多有用的 MySQL 管理教程，包括 MySQL 服务器启动和关闭、MySQL 服务器安全、MySQL 数据库维护、备份和恢复。  
+在本节中，您将找到许多有用的 MySQL 管理教程，包括 MySQL 服务器启动和关闭、MySQL 服务器安全、MySQL 数据库维护、备份和恢复。 
+
 
 
