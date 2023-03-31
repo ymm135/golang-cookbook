@@ -55,5 +55,5 @@ mysql> CHECK TABLE log_base_policy;
 8 rows in set (1 min 40.85 sec)
 ```
 
-> 最后发现问题了，如果在优化时`optimizer`，突然断点，那就会导致表无法使用了。  
+> 最后发现问题了，如果在优化时`optimizer`，为了减小表的大小，这时突然断电，那就会导致表无法使用了。  
 
