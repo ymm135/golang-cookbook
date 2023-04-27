@@ -101,4 +101,4 @@
 - **扩展**
   - [go-ebpf](md/other/go-ebpf.md)
   - [cgo](md/other/cgo.md)
-  - [prometheus + grafana]()
+  - [prometheus + grafana](md/other/prometheus-grafana.md)

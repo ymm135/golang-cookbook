@@ -24,20 +24,24 @@ extern int KillVirus(char *full_file_name, char *virus_name);
 
 `kill_virus_engine.cpp`  
 ```c++
-#include <stdio.h>
+#include <iostream>
 #include "kill_virus_engine.h"
+
+using namespace std;
 
 int EngineInit(char *key_file_path)
 {    
-    AviraEngine *avira_instance = AviraEngine::GetInstance();
-    return avira_instance->InitEngine(key_file_path);
+    cout << "EngineInit:" << key_file_path << endl;
+    return 0;
 }
 
 
 int KillVirus(char *full_file_name, char *virus_name)
 {
-    
-    return avira_instance->KillVirus(virus_name, full_file_name);
+    cout << "KillVirus:" << full_file_name << endl;
+    int* p = NULL;
+    cout << *p << endl;
+    return 0;
 }
 ```
 
