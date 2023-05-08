@@ -2,7 +2,15 @@
 
 - [环境搭建](#环境搭建)
   - [prometheus](#prometheus)
+  - [prometheus-docker](#prometheus-docker)
   - [grafana](#grafana)
+  - [grafana-docker](#grafana-docker)
+- [应用](#应用)
+  - [prometheus+grafana](#prometheusgrafana)
+  - [prometheus](#prometheus-1)
+  - [mysql](#mysql)
+  - [logging  日志统计](#logging--日志统计)
+
 
 
 ## 环境搭建  
@@ -148,6 +156,109 @@ node_cpu_seconds_total{cpu="1", group="production", instance="localhost:8080", j
 </div>
 <br>
 
+### prometheus-docker
+https://hub.docker.com/r/prom/prometheus/  
+
+独立安装:
+```sh
+docker run \
+    -p 9090:9090 \
+    --name prometheus \
+    -itd \
+    prom/prometheus
+```
+
+```sh
+docker run \
+    -p 9090:9090 \
+    --name prometheus \
+    -itd \
+    -v /path/to/prometheus.yml:/etc/prometheus/prometheus.yml \
+    prom/prometheus
+```
+
+http://localhost:9090/  
+
+使用docker启动一个ubuntu容器，`docker run --privileged=true -itd --name ssh-ubuntu -p 9100:9100 -p 222:22 atxiaoming/ssh-ubuntu:20.04`, 连接使用`ssh -p 222 root@localhost`, 密码123456  
+安装一个node  
+https://github.com/prometheus/node_exporter  
+
+```sh
+wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz  
+
+tar -zxvf node_exporter-*linux-amd64.tar.gz
+```
+
+查看帮助指令:
+```sh
+usage: node_exporter [<flags>]
+
+Flags:
+  -h, --help                     Show context-sensitive help (also try --help-long and --help-man).
+      --collector.arp.device-include=COLLECTOR.ARP.DEVICE-INCLUDE  
+                                 Regexp of arp devices to include (mutually exclusive to device-exclude).
+      --collector.cpu.info       Enables metric cpu_info
+      --collector.diskstats.device-include=COLLECTOR.DISKSTATS.DEVICE-INCLUDE  
+                                 Regexp of diskstats devices to include (mutually exclusive to device-exclude).
+      --collector.ethtool.device-include=COLLECTOR.ETHTOOL.DEVICE-INCLUDE 
+```
+
+运行客户端:`./node_exporter --web.listen-address 0.0.0.0:9100`  
+
+静态配置的局限性，可以使用自动发现:  
+- 基于文件的服务发现
+- 基于API的服务发现  
+
+这里使用基于`Consul`服务发现  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-9.png" width="75%"></img>  
+</div>
+<br>
+
+启动单节点consul服务:  
+https://hub.docker.com/_/consul  
+```sh
+$ docker run --name consul -d -p 8500:8500 consul
+```
+
+访问: http://localhost:8500  , ip地址为:`172.17.0.5`  
+
+通过api注册node_exporter, 在node节点运行:  
+```sh
+$ curl -X PUT -d '{"id": "node-exporter","name": "node-exporter-172.17.0.4","address": "172.17.0.4","port": 9100,"tags": ["test"],"checks": [{"http": "http://172.17.0.4:9100/metrics", "interval": "5s"}]}'  http://172.17.0.5:8500/v1/agent/service/register
+```
+
+这是可以在`consul`看见`node-exporter-172.17.0.4`节点  
+
+注销服务:`$ curl -X PUT http://172.17.0.5:8500/v1/agent/service/deregister/node-exporter`  
+
+
+配置 Prometheus 实现自动服务发现`prometheus.yml`  
+```sh
+...
+- job_name: 'consul-prometheus'
+  consul_sd_configs:
+  - server: '172.17.0.5:8500'
+    services: []  
+```
+
+使用`http:localhost:9090/targets`
+```
+可以看到设备: http://172.17.0.4:9100/metrics UP instance="172.17.0.4:9100" job="consul-prometheus"  
+```
+
+通过`http://localhost:9090/service-discovery?search=`可以看到`consul-prometheus`注册了多少服务  
+
+http://localhost:9100/metrics  可以看到数据  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-10.png" width="85%"></img>  
+</div>
+<br>
+
 ### grafana
 
 https://grafana.com/docs/grafana/latest/  
@@ -186,6 +297,16 @@ https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/
 
 > 也需要配置时区  
 
+### grafana-docker
+```sh
+docker run -itd \
+  -p 3000:3000 \
+  --name=grafana \
+  grafana/grafana-enterprise
+```
+
+>   -e "GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource" \  
+
 ## 应用  
 ### prometheus+grafana 
 
@@ -209,6 +330,9 @@ grafana首页，点击`Add data source`，选择`Prometheus`,
 <br>
 
 >  prometheus 时序数据库  
+
+如果使用docker搭建，直接填写容器ip地址`http://172.17.0.2:9090`  
+
 
 
 
