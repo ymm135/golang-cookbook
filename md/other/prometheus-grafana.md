@@ -1,5 +1,7 @@
 - # prometheus-grafana  
 
+https://github.com/yunlzheng/prometheus-book
+
 - [环境搭建](#环境搭建)
   - [prometheus](#prometheus)
   - [prometheus-docker](#prometheus-docker)
@@ -8,10 +10,10 @@
 - [应用](#应用)
   - [prometheus+grafana](#prometheusgrafana)
   - [prometheus](#prometheus-1)
+    - [自定义监控指标](#自定义监控指标)
+    - [prometheus.yml](#prometheusyml)
   - [mysql](#mysql)
   - [logging  日志统计](#logging--日志统计)
-
-
 
 ## 环境搭建  
 ### prometheus
@@ -227,7 +229,7 @@ $ docker run --name consul -d -p 8500:8500 consul
 
 通过api注册node_exporter, 在node节点运行:  
 ```sh
-$ curl -X PUT -d '{"id": "node-exporter","name": "node-exporter-172.17.0.4","address": "172.17.0.4","port": 9100,"tags": ["test"],"checks": [{"http": "http://172.17.0.4:9100/metrics", "interval": "5s"}]}'  http://172.17.0.5:8500/v1/agent/service/register
+$ curl -X PUT -d '{"id": "node-exporter","name": "node-exporter-172.17.0.5","address": "172.17.0.5","port": 9100,"tags": ["test"],"checks": [{"http": "http://172.17.0.5:9100/metrics", "interval": "5s"}]}'  http://172.17.0.4:8500/v1/agent/service/register
 ```
 
 这是可以在`consul`看见`node-exporter-172.17.0.4`节点  
@@ -333,8 +335,163 @@ grafana首页，点击`Add data source`，选择`Prometheus`,
 
 如果使用docker搭建，直接填写容器ip地址`http://172.17.0.2:9090`  
 
+时序数据库 (Time Series Database, TSDB) 是数据库大家庭中的一员，专门存储随时间变化的数据，如股票价格、传感器数据、机器状态监控等等。时序 (Time Series) 指的是某个变量随时间变化的所有历史，而样本 (Sample) 指的是历史中该变量的瞬时值。  
+
+prometheus数据存储结构:  
+https://www.vldb.org/pvldb/vol8/p1816-teller.pdf  
+https://xie.infoq.cn/article/9071f261190acbdf73dfcf4d7  
 
 
+```sh
+# HELP node_cpu_seconds_total Seconds the CPUs spent in each mode.
+# TYPE node_cpu_seconds_total counter
+node_cpu_seconds_total{cpu="0",mode="idle"} 2413.11
+node_cpu_seconds_total{cpu="0",mode="iowait"} 3.68
+node_cpu_seconds_total{cpu="0",mode="irq"} 0
+node_cpu_seconds_total{cpu="0",mode="nice"} 0
+node_cpu_seconds_total{cpu="0",mode="softirq"} 0.78
+node_cpu_seconds_total{cpu="0",mode="steal"} 0
+node_cpu_seconds_total{cpu="0",mode="system"} 16.6
+node_cpu_seconds_total{cpu="0",mode="user"} 14.25
+node_cpu_seconds_total{cpu="1",mode="idle"} 2416.71
+node_cpu_seconds_total{cpu="1",mode="iowait"} 3.73
+node_cpu_seconds_total{cpu="1",mode="irq"} 0
+node_cpu_seconds_total{cpu="1",mode="nice"} 0
+node_cpu_seconds_total{cpu="1",mode="softirq"} 0.73
+node_cpu_seconds_total{cpu="1",mode="steal"} 0
+node_cpu_seconds_total{cpu="1",mode="system"} 15.12
+node_cpu_seconds_total{cpu="1",mode="user"} 14.24
+node_cpu_seconds_total{cpu="2",mode="idle"} 2412.79
+node_cpu_seconds_total{cpu="2",mode="iowait"} 2.78
+node_cpu_seconds_total{cpu="2",mode="irq"} 0
+node_cpu_seconds_total{cpu="2",mode="nice"} 0
+node_cpu_seconds_total{cpu="2",mode="softirq"} 0.81
+node_cpu_seconds_total{cpu="2",mode="steal"} 0
+node_cpu_seconds_total{cpu="2",mode="system"} 16.95
+node_cpu_seconds_total{cpu="2",mode="user"} 13.82
+```
+
+过滤:`node_cpu_seconds_total{mode="system"}`
+
+NodeExporter 业务数据源, 业务数据源通过 Pull/Push 两种方式推送数据到 Prometheus Server。  
+
+Prometheus 通过配置报警规则，如果符合报警规则，那么就将报警推送到 AlertManager，由其进行报警处理。  
+
+
+```sh
+node_boot_time：系统启动时间
+node_cpu：系统CPU使用量
+nodedisk*：磁盘IO
+nodefilesystem*：文件系统用量
+node_load1：系统负载
+node_memeory*：内存使用量
+node_network*：网络带宽
+node_time：当前系统时间
+go_*：node exporter中go相关指标
+process_*：node exporter自身进程相关运行指标
+```
+
+节点的数据的说明: https://github.com/prometheus/node_exporter  
+
+#### 自定义监控指标  
+
+可以通过github种的`Textfile Collector`章节查看详情。  
+
+demo: https://github.com/prometheus-community/node-exporter-textfile-collector-scripts/blob/master/directory-size.sh  
+
+格式:  https://prometheus.io/docs/instrumenting/exposition_formats/  
+
+`node_exporter` 除了本身可以收集系统指标之外，还可以通过 `textfile` 模块来采集我们自定义的监控指标，这对于系统监控提供了更灵活的使用空间，比如我们通过脚本采集的监控数据就可以通过该模块暴露出去，用于 Prometheus 进行监控报警。  
+
+默认情况下 node_exporter 会启用 textfile 组建，但是需要使用 `--collector.textfile.directory` 参数设置一个用于采集的路径，所有生成的监控指标将放在该目录下，并以 .prom 文件名后缀结尾。  
+
+创建文件夹`/var/lib/node_exporter`, 修改启动参数:`./node_exporter --collector.textfile.directory=/var/lib/node_exporter`
+
+`directory-size.sh`
+```sh
+#!/bin/sh
+#
+# Expose directory usage metrics, passed as an argument.
+#
+# Usage: add this to crontab:
+#
+# */5 * * * * prometheus directory-size.sh /var/lib/prometheus | sponge /var/lib/node_exporter/directory_size.prom
+#
+# sed pattern taken from https://www.robustperception.io/monitoring-directory-sizes-with-the-textfile-collector/
+#
+# Author: Antoine Beaupré <anarcat@debian.org>
+echo "# HELP node_directory_size_bytes Disk space used by some directories"
+echo "# TYPE node_directory_size_bytes gauge"
+du --block-size=1 --summarize "$@" \
+  | sed -ne 's/\\/\\\\/;s/"/\\"/g;s/^\([0-9]\+\)\t\(.*\)$/node_directory_size_bytes{directory="\2"} \1/p'
+```
+
+安装`apt install cron`, 增加定时任务:  
+```sh
+$ crontab -l -u root
+no crontab for root
+
+systemctl start cron.service 
+systemctl enable cron.service 
+systemctl status cron.service 
+
+chmod +x /root/directory-size.sh
+
+apt install moreutils
+
+crontab -e 
+*/5 * * * * /root/directory-size.sh /var/lib/prometheus | sponge /var/lib/node_exporter/directory_size.prom  
+
+# 移除
+crontab -r
+```
+
+查看文件:  
+```sh
+# HELP node_directory_size_bytes Disk space used by some directories
+# TYPE node_directory_size_bytes gauge
+node_directory_size_bytes{directory="/var/lib/prometheus"} 4096
+```
+
+> http://localhost:9100/metrics 显示的信息是一样的  
+
+#### prometheus.yml  
+```yaml
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: 'consul-prometheus'
+    consul_sd_configs:
+      - server: '172.17.0.4:8500'
+        services: []  
+
+```
 
 ### mysql  
 
