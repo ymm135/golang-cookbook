@@ -13,7 +13,8 @@ https://github.com/yunlzheng/prometheus-book
     - [自定义监控指标](#自定义监控指标)
     - [prometheus.yml](#prometheusyml)
   - [mysql](#mysql)
-  - [logging  日志统计](#logging--日志统计)
+    - [alert](#alert)
+  - [logging日志统计](#logging日志统计)
 
 ## 环境搭建  
 ### prometheus
@@ -232,7 +233,7 @@ $ docker run --name consul -d -p 8500:8500 consul
 $ curl -X PUT -d '{"id": "node-exporter","name": "node-exporter-172.17.0.5","address": "172.17.0.5","port": 9100,"tags": ["test"],"checks": [{"http": "http://172.17.0.5:9100/metrics", "interval": "5s"}]}'  http://172.17.0.4:8500/v1/agent/service/register
 ```
 
-这是可以在`consul`看见`node-exporter-172.17.0.4`节点  
+这是可以在`consul`看见`node-exporter-172.17.0.5`节点  
 
 注销服务:`$ curl -X PUT http://172.17.0.5:8500/v1/agent/service/deregister/node-exporter`  
 
@@ -307,7 +308,7 @@ docker run -itd \
   grafana/grafana-enterprise
 ```
 
->   -e "GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource" \  
+> Error: ✗ Plugin not found (Grafana v9.5.1 linux-amd64)  
 
 ## 应用  
 ### prometheus+grafana 
@@ -505,8 +506,20 @@ scrape_configs:
 
 mysql后台更新数据,granfana其实已经同步了数据,只是视图范围没有更新`zoom`
 
+#### alert  
 
-### logging  日志统计  
+https://github.com/feiyu563/PrometheusAlert  
+
+PrometheusAlert是开源的运维告警中心消息转发系统，支持主流的监控系统Prometheus、Zabbix，日志系统Graylog2，Graylog3、数据可视化系统Grafana、SonarQube。阿里云-云监控，以及所有支持WebHook接口的系统发出的预警消息，支持将收到的这些消息发送到钉钉，微信，email，飞书，腾讯短信，腾讯电话，阿里云短信，阿里云电话，华为短信，百度云短信，容联云电话，七陌短信，七陌语音，TeleGram，百度Hi(如流)等。  
+
+<br>
+<div align=center>
+    <img src="../../res/other/it.png" width="90%"></img>  
+</div>
+<br>
+
+
+### logging日志统计  
 
 - ELK ：用Logstash收集和处理日志；将数据存储到ElasticSearch进行索引；用Kibana进行可视化显示；  
 - Loki:   Loki 操作更简单，运行成本更低，promtail收集日志，Grafana不用多说，界面酷炫！  
@@ -540,4 +553,135 @@ $ chmod a+x "loki-linux-amd64"
     <img src="../../res/other/simple-scalable-test-environment.png" width="80%"></img>  
 </div>
 <br>
+
+
+loki安装:  
+https://grafana.com/docs/loki/latest/installation/docker/  
+
+```sh
+wget https://raw.githubusercontent.com/grafana/loki/v2.8.0/cmd/loki/loki-local-config.yaml -O loki-config.yaml  
+
+docker run --name loki -d -v $(pwd):/mnt/config -p 3100:3100 -p 9093:9093 grafana/loki:2.8.0 -config.file=/mnt/config/loki-config.yaml    
+```
+
+
+promtail 安装  
+
+- bin文件安装:  https://github.com/grafana/loki/releases  
+https://github.com/grafana/loki/releases/download/v2.8.2/promtail-linux-amd64.zip  
+```sh
+wget https://raw.githubusercontent.com/grafana/loki/v2.8.0/clients/cmd/promtail/promtail-docker-config.yaml -O promtail-config.yaml
+
+
+./promtail-darwin-amd64 -config.file promtail-config.yaml
+```
+- docker安装:  
+https://grafana.com/docs/loki/latest/clients/promtail/installation/  
+```sh
+wget https://raw.githubusercontent.com/grafana/loki/v2.8.0/clients/cmd/promtail/promtail-docker-config.yaml -O promtail-config.yaml  
+
+docker run --name promtail -d -v $(pwd):/mnt/config -v /var/log:/var/log --link loki grafana/promtail:2.8.0 -config.file=/mnt/config/promtail-config.yaml
+```
+
+`http://localhost:9080/targets` 查看Promtail监听的客户端  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-11.png" width="85%"></img>  
+</div>
+<br>
+
+现在我在macos安装了`promtail`,push的url为`http://loki:3100/loki/api/v1/push`  
+
+
+grafana 查看日志，首先添加loki，这里添加数据库失败，使用wireshark监听3100端口`tcp.port == 3100`  
+```sh
+9	1.648349	::1	::1	HTTP	828	POST /loki/api/v1/push HTTP/1.1  (application/x-protobuf)
+10	1.648431	::1	::1	TCP	76	3100 → 60618 [ACK] Seq=1 Ack=753 Win=5829 Len=0 TSval=861279482 TSecr=3076202413
+```  
+
+这里可以看到，向loki发送日志数据是可以的，但是grafana连接loki确不行，添加的地址不能是`http://localhost:3100`,需要是容器的IP地址，哈哈  :smile:  
+
+这就可以了，需要制作的图表有两个，一个就是不同小时或者每天的日志总数，另一个就是日志的查询  
+
+
+#### granfana的transform
+https://grafana.com/docs/grafana/latest/panels-visualizations/query-transform-data/transform-data/  
+
+- 重命名字段  
+- 加入时间序列数据
+- 联合查询机数字运算  
+- 把转换的输出，作为下一个输入  
+
+另外还可以调试，能够看到原始数据和转换后数据的对比图  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-12.png" width="90%"></img>  
+</div>
+<br>
+
+> 通过时间分组，统计每个小时的日志量   
+
+现在需要搜索Loki日志，能够检索  
+https://segmentfault.com/a/1190000043402750   
+
+需要增加一个搜索变量，先找到面板，新增变量  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-13.png" width="90%"></img>  
+</div>
+<br>
+
+增加的条件为:`{job="varlogs"} |~ "$log_content"`  
+
+在增加一个时间范围:  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-14.png" width="90%"></img>  
+</div>
+<br>
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-15.png" width="90%"></img>  
+</div>
+<br>
+
+### Promtail 配置  
+
+```yaml
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: varlogs
+      __path__: /var/log/*log
+```
+https://grafana.com/docs/loki/latest/clients/promtail/
+
+每个job相当于是一个收集线程,可以定义多个，另外数据测试使用  
+```sh
+cat my.log | promtail --stdin --dry-run --inspect --client.url http://127.0.0.1:3100/loki/api/v1/push
+```
+
+
+
+
+
+
 
