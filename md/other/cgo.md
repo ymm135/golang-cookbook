@@ -1,5 +1,10 @@
 - cgo
 
+- [demo](#demo)
+- [cgo的原理](#cgo的原理)
+- [c调用go(so)](#c调用goso)
+
+
 ## demo
 
 `kill_virus_engine.h`
@@ -282,3 +287,148 @@ func _Cfunc_KillVirus(p0 *_Ctype_char, p1 *_Ctype_char) (r1 _Ctype_int) {
 	return
 }
 ```
+
+
+## c调用go(so)  
+
+https://zhuanlan.zhihu.com/p/32066522  
+
+首先使用c写`legendtkl.h`  
+```c
+int foo();
+int bar();
+```
+
+`legendtkl.c`  
+```c
+#include "legendtkl.h"
+#include <stdio.h>
+
+int foo() {
+    int a[1000] = {1,2,3};
+    return a[0] + a[1] + a[2];
+}
+
+int bar() {
+    printf("hello, I am Legendtkl\n");
+    return 42;
+}
+```
+
+再编写一个测试程序：test.c  
+```sh
+#include "legendtkl.h"
+
+int main() {
+    foo();
+    bar();
+    return 0;
+}
+```
+
+静态编译:
+```sh
+gcc -v test.c legendtkl.c -o test1
+```
+
+执行`./test1`  
+```sh
+hello, I am Legendtkl
+```
+
+动态编译:  
+```sh
+# 动态库
+gcc -shared -fpic -o liblegendtkl.so legendtkl.c
+
+# 编译
+gcc -v test.c -o test2 ./liblegendtkl.so
+```
+
+Go 代码编译成 so, `legendtkl.go`  
+```sh
+package main
+
+import "C"
+
+import (
+    "fmt"
+)
+
+//export Foo
+func Foo(a, b int) int {
+    return a + b;
+}
+
+//export Bar
+func Bar() {
+    fmt.Println("I am bar, not foo!")
+}
+
+func main() {}
+```
+
+构建 so 文件。Go 构建出来的 so 文件比较大，因为 Go 有 runtime。  
+```sh
+go build -o legendtkl.so -buildmode=c-shared legendtkl.go
+```
+
+这个时候正常会输出生成两个文件：legendtkl.h 和 legendtkl.so。头文件中负责做一些类型转换。截取部分内容如下  
+```c
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern GoInt Foo(GoInt a, GoInt b);
+extern void Bar();
+```
+
+编写测试代码：`test.c`  
+```c
+#include "legendtkl.h"
+#include <stdio.h>
+
+int main() {
+    printf("%lld\n",Foo(1,2));
+    Bar();
+    return 0;
+}
+```
+
+
+```sh
+gcc test.c -o test ./legendtkl.so
+```
+
+运行结果:  
+```sh
+./test
+3
+I am bar, not foo!
+```
+
+也可以把go代码导出为静态库，然后参与c代码的编译:  
+```sh
+# 导出静态库
+go build -o legendtkl.a -buildmode=c-archive legendtkl.go
+
+# 静态库编译
+gcc test.c legendtkl.a -o test  
+```
+
+报错:  
+```sh
+gcc  test.c legendtkl.a -o test
+/usr/bin/ld: legendtkl.a(000006.o): in function `_cgo_try_pthread_create':
+/_/runtime/cgo/gcc_libinit.c:100: undefined reference to `pthread_create'
+/usr/bin/ld: /_/runtime/cgo/gcc_libinit.c:102: undefined reference to `pthread_detach'
+/usr/bin/ld: legendtkl.a(000007.o): in function `x_cgo_init':
+/_/runtime/cgo/gcc_linux_amd64.c:46: undefined reference to `pthread_attr_getstacksize'
+/usr/bin/ld: legendtkl.a(000007.o): in function `_cgo_sys_thread_start':
+/_/runtime/cgo/gcc_linux_amd64.c:67: undefined reference to `pthread_sigmask'
+/usr/bin/ld: /_/runtime/cgo/gcc_linux_amd64.c:70: undefined reference to `pthread_attr_getstacksize'
+/usr/bin/ld: /_/runtime/cgo/gcc_linux_amd64.c:75: undefined reference to `pthread_sigmask'
+```
+
+
+

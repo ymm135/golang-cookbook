@@ -3,6 +3,7 @@
 https://github.com/yunlzheng/prometheus-book
 
 - [环境搭建](#环境搭建)
+  - [docker容器静态ip](#docker容器静态ip)
   - [prometheus](#prometheus)
   - [prometheus-docker](#prometheus-docker)
   - [grafana](#grafana)
@@ -15,8 +16,32 @@ https://github.com/yunlzheng/prometheus-book
   - [mysql](#mysql)
     - [alert](#alert)
   - [logging日志统计](#logging日志统计)
+    - [granfana的transform](#granfana的transform)
+  - [Promtail配置](#promtail配置)
+  - [可视化](#可视化)
+  - [服务器部署流程](#服务器部署流程)
+
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-17.png" width="90%"></img>  
+</div>
+<br>
 
 ## 环境搭建  
+### docker容器静态ip  
+默认的 docker0 网络是不支持容器固定 IP 到该网段的，必须先创建一个自定义网络，才能固定容器 IP 到这个自定义网络中  
+
+```sh
+sudo docker network create --subnet=[自定义网络广播地址]/[子网掩码位数] [自定义网络名]  
+
+# 示例
+sudo docker network create --subnet=172.20.0.0/24 mynet
+
+# 容器设置固定ip
+sudo docker run -it --name network-test --net mynet --ip 172.20.0.2 ubuntu:latest /bin/bash
+```
+
 ### prometheus
 https://prometheus.io/  
 
@@ -494,6 +519,17 @@ scrape_configs:
 
 ```
 
+### grafana模版  
+`Import dashboard`  
+
+https://grafana.com/grafana/dashboards/  
+
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-18.png" width="90%"></img>  
+</div>
+<br>
+
 ### mysql  
 
 在数据源配置mysql  
@@ -504,7 +540,20 @@ scrape_configs:
 </div>
 <br>
 
-mysql后台更新数据,granfana其实已经同步了数据,只是视图范围没有更新`zoom`
+mysql后台更新数据,granfana其实已经同步了数据,只是视图范围没有更新`zoom`  
+
+```sh
+./mysqld_exporter --web.listen-address=0.0.0.0:9104 --config.my-cnf=my.cnf 
+```
+
+`my.cnf`  
+```sh
+[client]
+user=root
+password="Netvine123#@!"
+host=localhost
+port=3306
+```
 
 #### alert  
 
@@ -650,7 +699,15 @@ https://segmentfault.com/a/1190000043402750
 </div>
 <br>
 
-### Promtail 配置  
+loki日志清理:  
+https://grafana.com/docs/loki/latest/configuration/  
+```sh
+table_manager:
+  retention_deletes_enabled: true  
+  retention_period: 672h
+```
+
+### Promtail配置
 
 ```yaml
 server:
@@ -661,7 +718,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://localhost:3100/loki/api/v1/push
+  - url: http://localhost:3100/loki/api/v1/push  
 
 scrape_configs:
 - job_name: system
@@ -679,6 +736,108 @@ https://grafana.com/docs/loki/latest/clients/promtail/
 cat my.log | promtail --stdin --dry-run --inspect --client.url http://127.0.0.1:3100/loki/api/v1/push
 ```
 
+### 可视化  
+https://grafana.com/blog/2023/05/11/use-canvas-panels-to-customize-visualizations-in-grafana/?utm_source=grafana_news&utm_medium=rss  
+
+https://grafana.com/docs/grafana/latest/panels-visualizations/visualizations/canvas/  
+
+
+### 服务器部署流程  
+```sh
+docker run \
+    -p 9090:9090 \
+    --name prometheus \
+    -itd \
+    --net mynet --ip 172.20.0.2 \
+    -v /opt/netvine/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+    prom/prometheus
+```
+
+```sh
+docker run -itd \
+  -p 3000:3000 \
+  --name=grafana \
+  -v /opt/netvine/grafana/grafana.ini:/etc/grafana/grafana.ini \
+  --net mynet --ip 172.20.0.3 \
+  grafana/grafana-enterprise
+```
+
+```sh
+docker run --name consul --net mynet --ip 172.20.0.4 -itd -p 8500:8500 consul
+```
+
+```sh
+docker run --name loki -d -v /opt/netvine/loki:/mnt/config --net mynet --ip 172.20.0.5 -p 3100:3100 -p 9093:9093 grafana/loki:2.8.0 -config.file=/mnt/config/loki-config.yaml
+```
+
+```sh
+# node下载
+https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
+
+cd /opt/monitor/node_exporter-1.5.0.linux-amd64  
+./node_exporter --web.listen-address 0.0.0.0:9100 &
+```
+
+```sh
+# 注册客户端
+$ curl -X PUT -d '{"id": "node-exporter-10.25.10.126","name": "node-exporter-10.25.10.126","address": "10.25.10.126","port": 9100,"tags": ["firewall-develop-device"],"checks": [{"http": "http://10.25.10.126:9100/metrics", "interval": "5s"}]}'  http://10.25.10.21:8500/v1/agent/service/register
+```
+- cpu使用率
+- 内存使用率
+- 磁盘使用率
+- 磁盘IO
+- 关键业务进程
+- coredump文件
+
+- #### Promtail 配置 
+```sh
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://10.25.10.21:3100/loki/api/v1/push  
+
+scrape_configs:
+- job_name: 10.25.10.126-app-log
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      name: app-log
+      job: 10.25.10.126
+      __path__: /data/logs/*/*.log
+  - targets:
+      - localhost
+    labels:
+      name: system-log
+      job: 10.25.10.126
+      __path__: /var/log/syslog
+```  
+
+https://github.com/grafana/loki/releases/download/v2.8.2/promtail-linux-amd64.zip  
+启动:
+
+```sh
+cd /opt/monitor/
+./promtail-linux-amd64 -config.file promtail-config.yaml
+```
+
+截图:
+<br>
+<div align=center>
+    <img src="../../res/other/prometheus-16.png" width="90%"></img>  
+</div>
+<br>
+
+
+
+### Traces  
+https://grafana.com/products/cloud/traces/  
+https://grafana.com/docs/tempo/latest/getting-started/?pg=get&plcmt=selfmanaged-box3-cta1  
 
 
 
