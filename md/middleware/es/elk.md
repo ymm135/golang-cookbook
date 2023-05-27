@@ -162,10 +162,6 @@ docker network create --subnet=172.20.1.0/24 elastic
 配置文件`~/work/devops/elk/logstash/config/logstash.yml`
 ```yml
 http.host: "0.0.0.0"
-xpack.monitoring.enabled: true
-xpack.monitoring.elasticsearch.hosts: "https://172.20.1.2:9200"  #es地址
-xpack.monitoring.elasticsearch.username: "elastic"  #es xpack账号
-xpack.monitoring.elasticsearch.password: "1zoajcY3=FP7uNsrdL*w"     #es xpack账号
 path.config: /usr/share/logstash/config/conf.d/*.conf
 path.logs: /usr/share/logstash/logs
 ```
@@ -181,7 +177,7 @@ docker run --rm -itd --net elastic --ip 172.20.1.5 \
 另外也可以使用自定义参数:
 ```sh
 docker run --rm -itd --net elastic --ip 172.20.1.5 \
-  -p 5044:5044 -p 5000:5000 \
+  -p 5044:5044 -p 5000:5000 -p 5140:5140 \
   --name logstash \
   -v ~/work/devops/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml  \
   -v ~/work/devops/elk/logstash/conf.d:/usr/share/logstash/config/conf.d  \
@@ -197,15 +193,12 @@ docker run --rm -itd --net elastic --ip 172.20.1.5 \
 xpack.monitoring.elasticsearch.hosts: [ "https://172.20.1.2:9200" ]
 ```
 
-查看`/usr/share/logstash/pipeline/logstash.conf`和自定义配置文件
+查看`/usr/share/logstash/config/conf.d/logstash.conf`和自定义配置文件  
+> 默认是`/usr/share/logstash/pipeline/logstash.conf`, 如果你配置了conf.d，pipeline中的conf就不生效了  
 ```sh
 input {
-  beats {
-    port => 5044
-  }
-
   tcp {
-        port => 8888
+        port => 5000
         mode => "server"
         ssl_enable => false
   }
@@ -220,8 +213,11 @@ output {
 
 启动日志:
 ```sh
-2023-05-27 08:09:44 [2023-05-27T00:09:44,916][INFO ][org.logstash.beats.Server][main][a7e06e5ba3af36e3cc6510b61f21af98825617a54a6cec3b588c10c663d93b05] Starting server on port: 5044
-2023-05-27 08:09:44 [2023-05-27T00:09:44,926][INFO ][logstash.inputs.tcp      ][main][fdf3cce1f7d1a5326c6ea7124bb96ff891c4c9599e309de47ce665e94ba18a02] Starting tcp input listener {:address=>"0.0.0.0:8888", :ssl_enable=>false}
+2023-05-27 21:37:19 [2023-05-27T13:37:19,627][INFO ][logstash.javapipeline    ][main] Starting pipeline {:pipeline_id=>"main", "pipeline.workers"=>3, "pipeline.batch.size"=>125, "pipeline.batch.delay"=>50, "pipeline.max_inflight"=>375, "pipeline.sources"=>["/usr/share/logstash/config/conf.d/logstash.conf"], :thread=>"#<Thread:0x4d0d1e3b@/usr/share/logstash/logstash-core/lib/logstash/java_pipeline.rb:134 run>"}
+2023-05-27 21:37:19 [2023-05-27T13:37:19,996][INFO ][logstash.javapipeline    ][main] Pipeline Java execution initialization time {"seconds"=>0.37}
+2023-05-27 21:37:20 [2023-05-27T13:37:20,069][INFO ][logstash.javapipeline    ][main] Pipeline started {"pipeline.id"=>"main"}
+2023-05-27 21:37:20 [2023-05-27T13:37:20,074][INFO ][logstash.inputs.tcp      ][main][5d3b15e941d2a5fd9052e87c49105661524bbbf5a664607aa8139aacaf6277b3] Starting tcp input listener {:address=>"0.0.0.0:5000", :ssl_enable=>false}
+2023-05-27 21:37:20 [2023-05-27T13:37:20,081][INFO ][logstash.agent           ] Pipelines running {:count=>1, :running_pipelines=>[:main], :non_running_pipelines=>[]}
 ```
 
 > 独立运行:`docker exec logstash bin/logstash -f /usr/share/logstash/pipeline/logstash.conf`   
@@ -229,8 +225,116 @@ output {
 使用宿主机测试:
 ```sh
 echo "Hello Log" > olddata
-nc 127.0.0.1 8888 < olddata
+nc 127.0.0.1 5000 < olddata
 ```
+
+控制台输出的日志
+```sh
+2023-05-27 21:39:02 {
+2023-05-27 21:39:02     "@timestamp" => 2023-05-27T13:39:02.257847877Z,
+2023-05-27 21:39:02          "event" => {
+2023-05-27 21:39:02         "original" => "Hello Log"
+2023-05-27 21:39:02     },
+2023-05-27 21:39:02       "@version" => "1",
+2023-05-27 21:39:02        "message" => "Hello Log"
+2023-05-27 21:39:02 }
+```
+
+syslog输入模块配置测试,新建一个配置文件`/usr/share/logstash/config/conf.d/syslog.conf`  
+```sh
+input {
+  syslog {
+    port => 5140
+    codec => cef
+    syslog_field => "syslog"
+    grok_pattern => "<%{POSINT:priority}>%{SYSLOGTIMESTAMP:timestamp} CUSTOM GROK HERE"
+  }
+}
+
+output {
+  stdout {
+    codec => rubydebug
+  }
+}
+```
+
+输出格式:
+```sh
+2023-05-27 22:16:48 {
+2023-05-27 22:16:48            "log" => {
+2023-05-27 22:16:48         "syslog" => {
+2023-05-27 22:16:48             "facility" => {
+2023-05-27 22:16:48                 "name" => "kernel",
+2023-05-27 22:16:48                 "code" => 0
+2023-05-27 22:16:48             },
+2023-05-27 22:16:48             "priority" => 0,
+2023-05-27 22:16:48             "severity" => {
+2023-05-27 22:16:48                 "name" => "Emergency",
+2023-05-27 22:16:48                 "code" => 0
+2023-05-27 22:16:48             }
+2023-05-27 22:16:48         }
+2023-05-27 22:16:48     },
+2023-05-27 22:16:48        "message" => "<34>Oct 11 22:14:15 mymachine myproc[10]: 'su root' failed for user",
+2023-05-27 22:16:48           "tags" => [
+2023-05-27 22:16:48         [0] "_cefparsefailure",
+2023-05-27 22:16:48         [1] "_grokparsefailure_sysloginput"
+2023-05-27 22:16:48     ],
+2023-05-27 22:16:48           "host" => {
+2023-05-27 22:16:48         "ip" => "172.20.1.1"
+2023-05-27 22:16:48     },
+2023-05-27 22:16:48        "service" => {
+2023-05-27 22:16:48         "type" => "system"
+2023-05-27 22:16:48     },
+2023-05-27 22:16:48       "@version" => "1",
+2023-05-27 22:16:48     "@timestamp" => 2023-05-27T14:16:48.630375811Z,
+2023-05-27 22:16:48          "event" => {
+2023-05-27 22:16:48         "original" => nil
+2023-05-27 22:16:48     }
+2023-05-27 22:16:48 }
+```
+
+或者
+```sh
+input {
+  tcp {
+    port => 5140
+    type => syslog
+  }
+
+  udp {
+    port => 5140
+    type => syslog
+  }
+}
+
+output {
+  stdout {
+    codec => rubydebug
+  }
+}
+```
+
+输出日志:
+```sh
+2023-05-27 22:14:26 {
+2023-05-27 22:14:26           "type" => "syslog",
+2023-05-27 22:14:26        "message" => "<34>Oct 11 22:14:15 mymachine myproc[10]: 'su root' failed for user",
+2023-05-27 22:14:26       "@version" => "1",
+2023-05-27 22:14:26     "@timestamp" => 2023-05-27T14:14:26.629098863Z,
+2023-05-27 22:14:26          "event" => {
+2023-05-27 22:14:26         "original" => "<34>Oct 11 22:14:15 mymachine myproc[10]: 'su root' failed for user"
+2023-05-27 22:14:26     }
+2023-05-27 22:14:26 }
+```
+
+启动日志
+```sh
+2023-05-27 21:50:37 [2023-05-27T13:50:37,161][INFO ][logstash.inputs.syslog   ][main][1d272c67008a0c809278b494f2080e76cb40a66167f9a0dc054c91c2ed734946] Starting syslog udp listener {:address=>"0.0.0.0:5140"}
+2023-05-27 21:50:37 [2023-05-27T13:50:37,165][INFO ][logstash.inputs.syslog   ][main][1d272c67008a0c809278b494f2080e76cb40a66167f9a0dc054c91c2ed734946] Starting syslog tcp listener {:address=>"0.0.0.0:5140"}
+```
+
+
+
 
 ### elasticsearch  
 https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
