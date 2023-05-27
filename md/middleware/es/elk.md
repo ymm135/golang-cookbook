@@ -132,6 +132,23 @@ output.logstash:
   hosts: ["127.0.0.1:5044"]
 ```
 
+logstash规则
+```sh
+input {
+  beats {
+    port => 5044
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://localhost:9200"]
+    index => "%{[@metadata][beat]}-%{[@metadata][version]}" 
+    action => "create"
+  }
+}
+```
+
 ### logstash
 
 https://www.elastic.co/guide/en/logstash/current/docker.html
@@ -178,6 +195,41 @@ docker run --rm -itd --net elastic --ip 172.20.1.5 \
 修改容器配置文件:`/usr/share/logstash/config/logstash.yml`  
 ```sh
 xpack.monitoring.elasticsearch.hosts: [ "https://172.20.1.2:9200" ]
+```
+
+查看`/usr/share/logstash/pipeline/logstash.conf`和自定义配置文件
+```sh
+input {
+  beats {
+    port => 5044
+  }
+
+  tcp {
+        port => 8888
+        mode => "server"
+        ssl_enable => false
+  }
+}
+
+output {
+  stdout {
+    codec => rubydebug
+  }
+}
+```
+
+启动日志:
+```sh
+2023-05-27 08:09:44 [2023-05-27T00:09:44,916][INFO ][org.logstash.beats.Server][main][a7e06e5ba3af36e3cc6510b61f21af98825617a54a6cec3b588c10c663d93b05] Starting server on port: 5044
+2023-05-27 08:09:44 [2023-05-27T00:09:44,926][INFO ][logstash.inputs.tcp      ][main][fdf3cce1f7d1a5326c6ea7124bb96ff891c4c9599e309de47ce665e94ba18a02] Starting tcp input listener {:address=>"0.0.0.0:8888", :ssl_enable=>false}
+```
+
+> 独立运行:`docker exec logstash bin/logstash -f /usr/share/logstash/pipeline/logstash.conf`   
+
+使用宿主机测试:
+```sh
+echo "Hello Log" > olddata
+nc 127.0.0.1 8888 < olddata
 ```
 
 ### elasticsearch  
