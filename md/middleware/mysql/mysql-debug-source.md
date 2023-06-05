@@ -1,7 +1,13 @@
 # mysql 5.7 源码调试  
 
-## 环境搭建及源码编译  
+- [mysql 5.7 源码调试](#mysql-57-源码调试)
+  - [环境搭建及源码编译](#环境搭建及源码编译)
+  - [mysql 用户管理(`mysql.user`表)](#mysql-用户管理mysqluser表)
+  - [vscode 调试](#vscode-调试)
+  - [mysql 通信数据包](#mysql-通信数据包)
+  - [mysql优化官方文档](#mysql优化官方文档)
 
+## 环境搭建及源码编译  
 - ### boost 安装(版本1_59_0)  
 
 > 也可以不编译，直接使用 -DWITH_BOOST=/path/to/boost_1_59_0 
@@ -163,6 +169,12 @@ debug                                                        (No default value)
 console                                                      FALSE
 daemonize                                                    FALSE
 ```
+
+指定用户启动
+- /usr/sbin/mysqld --pid-file=/var/run/mysqld/mysqld.pid --user=mysql
+- /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.pid --user=mysql
+
+> 配置文件在/etc/my.cnf  
 
 查看错误日志: `tailf /var/log/mysql/error.log`
 ```shell

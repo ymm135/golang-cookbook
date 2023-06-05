@@ -1,6 +1,27 @@
 # mysql 基础知识  
 [参考书籍《深入浅出MySQL：数据库开发、优化与管理维护(第2版)]()  
 
+- [mysql 基础知识](#mysql-基础知识)
+- [用于日常开发的知识](#用于日常开发的知识)
+  - [存储引擎](#存储引擎)
+  - [InnoDB](#innodb)
+    - [整体架构](#整体架构)
+    - [内存中结构](#内存中结构)
+      - [缓冲池(Buffer Pool)](#缓冲池buffer-pool)
+      - [Change Buffer](#change-buffer)
+    - [硬盘中结构](#硬盘中结构)
+      - [Table](#table)
+      - [Index](#index)
+  - [数据类型](#数据类型)
+  - [字符集](#字符集)
+  - [索引的设计及使用](#索引的设计及使用)
+  - [视图](#视图)
+  - [存储过程和函数](#存储过程和函数)
+  - [触发器](#触发器)
+  - [事务控制和锁定语句](#事务控制和锁定语句)
+  - [安装mysql](#安装mysql)
+
+
 # 用于日常开发的知识  
 ## 存储引擎  
 MySQL5.0支持的存储引擎包括 `MyISAM`、`InnoDB`、`BDB`、`MEMORY`、`MERGE`、`EXAMPLE`、`NDBCluster`、`ARCHIVE`、`CSV`、`BLACKHOLE`、`FEDERATED`等，其中`InnoDB`和`BDB`提供事务安全表，其他存储引擎都是非事务安全表。  
@@ -392,6 +413,143 @@ mysql> select User,authentication_string,Host from mysql.user;
 | root          | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B | %         |
 +---------------+-------------------------------------------+-----------+
 ```
+
+# mysql 日常维护
+## 配置及启动
+
+启动文件`/etc/init.d/mysql`,启动测试`bash -x /etc/init.d/mysql start`
+```sh
+++++ systemctl is-system-running
++++ OUT=degraded
++++ '[' degraded '!=' degraded ']'
++++ '[' start = status ']'
++++ log_daemon_msg 'Starting mysql (via systemctl)' mysql.service
++++ '[' -z 'Starting mysql (via systemctl)' ']'
++++ log_daemon_msg_pre 'Starting mysql (via systemctl)' mysql.service
++++ :
++++ '[' -z mysql.service ']'
++++ echo -n 'Starting mysql (via systemctl): mysql.service'
+Starting mysql (via systemctl): mysql.service+++ log_daemon_msg_post 'Starting mysql (via systemctl)' mysql.service
++++ :
++++ /bin/systemctl --no-pager start mysql.service
++++ rc=0
++++ '[' start = status ']'
++++ log_end_msg 0
++++ '[' -z 0 ']'
++++ local retval
++++ retval=0
++++ log_end_msg_pre 0
+```
+
+可以看出启动参数是通过`mysql.service`保存的  
+
+服务目录:`/usr/lib/systemd/system/mysql.service`  
+`cat /usr/lib/systemd/system/mysql.service`  
+```sh
+[Unit]
+Description=MySQL Community Server
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=mysql
+Group=mysql
+Type=forking
+PermissionsStartOnly=true
+PIDFile=/var/run/mysqld/mysqld.pid
+ExecStartPre=/usr/share/mysql/mysql-systemd-start pre
+ExecStart=/usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.pid
+TimeoutSec=600
+LimitNOFILE = 5000
+Restart=on-failure
+RestartPreventExitStatus=1
+RuntimeDirectory=mysqld
+RuntimeDirectoryMode=755
+```
+
+指定用户启动
+- /usr/sbin/mysqld --pid-file=/var/run/mysqld/mysqld.pid --user=mysql
+- /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.pid --user=mysql
+
+> 如果自定义数据目录权限不行，最后可以关闭selinux试试  
+
+## 数据迁移
+```sh
+# 停止
+systemctl stop mysql.service 
+
+# 创建新目录
+mkdir -p /data/mysql/data
+
+# 拷贝
+/bin/cp -fr /var/lib/mysql/* /data/mysql/data  
+
+# 修改权限
+chown -R mysql.mysql /data/mysql/data  
+
+# 修改配置文件
+vim /etc/mysql/conf.d/mysqld.cnf
+datadir = /data/mysql/data
+
+# 启动
+systemctl start mysql.service 
+
+# 备份移除
+mv /var/lib/mysql /var/lib/mysql.bak
+```
+
+> 日常启动测试  /usr/sbin/mysqld --pid-file=/var/run/mysqld/mysqld.pid --user=mysql  
+
+需要注意文件权限
+```sh
+(u)第一组权限控制访问自己的文件权限，即所有者权限。
+(g)第二组权限控制用户组访问其中一个用户的文件的权限。
+(o)第三组权限控制其他所有用户访问一个用户的文件的权限。
+```
+
+另外还有一个坑就是`apparmor`  
+```sh
+# 查看状态
+apparmor_status
+apparmor module is loaded.
+13 profiles are loaded.
+13 profiles are in enforce mode.
+   /usr/bin/man
+   /usr/lib/NetworkManager/nm-dhcp-client.action
+   /usr/lib/NetworkManager/nm-dhcp-helper
+   /usr/lib/connman/scripts/dhclient-script
+   /usr/sbin/mysqld
+   /usr/sbin/ntpd
+   /usr/sbin/tcpdump
+   /{,usr/}sbin/dhclient
+   lsb_release
+   man_filter
+   man_groff
+   nvidia_modprobe
+   nvidia_modprobe//kmod
+0 profiles are in complain mode.
+1 processes have profiles defined.
+1 processes are in enforce mode.
+   /usr/sbin/ntpd (673) 
+0 processes are in complain mode.
+0 processes are unconfined but have a profile defined.
+```
+
+查看所有配置
+```sh
+ls /etc/apparmor.d/
+abstractions  force-complain  lsb_release      sbin.dhclient  usr.bin.man      usr.sbin.ntpd      usr.sbin.tcpdump
+disable       local           nvidia_modprobe  tunables       usr.sbin.mysqld  usr.sbin.rsyslogd
+```
+
+禁用mysql
+```sh
+$ sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+$ apparmor_parser -R /etc/apparmor.d/disable/usr.sbin.mysqld
+```
+
 
 
 

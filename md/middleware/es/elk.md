@@ -1,4 +1,24 @@
-# ELK
+- # ELK
+
+- [结构](#结构)
+  - [官网](#官网)
+- [安装logstash](#安装logstash)
+  - [linux 安装](#linux-安装)
+  - [docker 安装](#docker-安装)
+- [logstash 指南](#logstash-指南)
+  - [入门](#入门)
+  - [原理](#原理)
+  - [JDBC Input Plugin](#jdbc-input-plugin)
+- [mysql同步工具canal](#mysql同步工具canal)
+- [环境搭建](#环境搭建)
+  - [filebeat](#filebeat)
+  - [logstash](#logstash)
+    - [输出到pg](#输出到pg)
+  - [elasticsearch](#elasticsearch)
+  - [kibana](#kibana)
+- [以下连接es方式没有成功，可以忽略](#以下连接es方式没有成功可以忽略)
+
+
 ## 结构
 ### [官网](https://www.elastic.co/cn/what-is/elk-stack)  
 ![elk-structure](../../../res/elk-structure.png)  
@@ -168,16 +188,16 @@ path.logs: /usr/share/logstash/logs
 
 ```sh
 # 启动
-docker run --rm -itd --net elastic --ip 172.20.1.5 \
-  -p 5044:5044 -p 5000:5000 \
+docker run -itd --net elastic --ip 172.20.1.5 \
+  -p 5044:5044 -p 5000:5000/udp \
   --name logstash \
   docker.elastic.co/logstash/logstash:8.8.0
 ```
 
 另外也可以使用自定义参数:
 ```sh
-docker run --rm -itd --net elastic --ip 172.20.1.5 \
-  -p 5044:5044 -p 5000:5000 -p 5140:5140 \
+docker run -itd --net elastic --ip 172.20.1.5 \
+  -p 5044:5044 -p 5000:5000 -p 5140:5140/udp \
   --name logstash \
   -v ~/work/devops/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml  \
   -v ~/work/devops/elk/logstash/conf.d:/usr/share/logstash/config/conf.d  \
@@ -333,8 +353,90 @@ output {
 2023-05-27 21:50:37 [2023-05-27T13:50:37,165][INFO ][logstash.inputs.syslog   ][main][1d272c67008a0c809278b494f2080e76cb40a66167f9a0dc054c91c2ed734946] Starting syslog tcp listener {:address=>"0.0.0.0:5140"}
 ```
 
+#### 过滤  
+https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html  
+
+发送的数据
+```sh
+echo '"0:09:10","wwm","/WAN2交换机组/","100.100.54.199","113.96.202.102","邮件","QQ邮箱[浏览]","未定义位置","/PC","记录","59693268","wp_zie_file.zip","128","压缩文件"' | nc -w1 -u 127.0.0.1 5140
+
+echo '"0:00:01","zhangxue","/部门集群用户组/","10.22.58.155","115.236.118.54","访问网站","个人网站及博客","未定义位置","/未知类型","记录","api.money.126.net","api.money.126.net","示例标题","-"' | nc -w1 -u 127.0.0.1 5140
+
+端口: 5140
+数据库: t_behavior_log_url, 序列: nextval('t_behavior_log_url_seq'::regclass)
+```
+
+过滤规则:  
+```sh
+input {
+  udp {
+    port => 5140
+  }
+}
+
+filter {
+  grok {
+    match => { "message" => "%{TIME:record_time},%{WORD:user},%{DATA:group},%{IP:host_ip},%{IP:dst_ip},%{DATA:serv},%{DATA:app},%{DATA:site},%{DATA:tm_type},%{DATA:net_action},%{DATA:url},%{DATA:DNS},%{DATA:title},%{DATA:snapshot}" }
+  }
+}
+```
+
+> 主要是字符串分割  
 
 
+#### 输出到pg
+
+docker安装pg
+```sh
+docker run -itd -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres --net elastic --ip 172.20.1.6 -p 5432:5432 --name postgresql postgres
+```
+>也可以添加自己的数据: -v /data:/var/lib/postgresql/data  
+
+使用[pgadmin](https://www.pgadmin.org/download/)连接  
+
+创建数据库和表
+```sh
+postgres=# CREATE DATABASE sysloddb;
+
+CREATE TABLE t_behavior_log(
+   ID INT PRIMARY KEY     NOT NULL,
+   TIME           TEXT    NOT NULL,
+   CONTENT        CHAR(500),
+);
+
+使用\d查看是否创建成功
+```
+
+最终发现还是使用navicat连接使用比较习惯  
+```sh
+INSERT INTO "public"."t_behavior_log" ("id", "time", "user", "group", "source_ip", "destination_ip", "action", "client", "location", "device", "log", "size1", "size2", "size_name") VALUES (1, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+```
+
+安装jdbc模块:
+```sh
+# 容器内执行
+logstash-plugin install --no-verify logstash-output-jdbc 
+
+# 容器内创建
+mkdir -p /usr/share/logstash/vendor/jar/jdbc
+
+# 宿主机拷贝到容器
+docker cp lpostgresql-42.5.1.jar logstash:/usr/share/logstash/vendor/jar/jdbc
+```
+
+输出模块配置
+```sh
+output {
+  stdout {
+    codec => rubydebug
+  }
+
+  jdbc {
+    connection_string => "jdbc:postgresql://10.25.1.4:5432/xgxx_log?user=postgres&password=password"
+    statement => ['INSERT INTO t_behavior_log_url (record_time, "user", "group", host_ip, dst_ip, serv, app, site, tm_type, net_action, url, dns, title, snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',"record_time", "user", "group", "host_ip", "dst_ip", "serv", "app", "site", "tm_type", "net_action", "url", "DNS", "title", "snapshot"]
+  }
+}
+```
 
 ### elasticsearch  
 https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
