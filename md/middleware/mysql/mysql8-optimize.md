@@ -6,9 +6,18 @@
     - [数据准备](#数据准备)
 - [慢查询发现与分析](#慢查询发现与分析)
 - [数据库调优原理](#数据库调优原理)
+  - [explain与耗时分析](#explain与耗时分析)
+  - [load data 语句优化](#load-data-语句优化)
   - [B-Tree与B+Tree](#b-tree与btree)
   - [MyISAM与InnoDB](#myisam与innodb)
 - [特定语句的原理与调优](#特定语句的原理与调优)
+  - [JOIN](#join)
+- [内存占用分析](#内存占用分析)
+    - [统计分析](#统计分析)
+    - [grafana  监测](#grafana--监测)
+    - [mysql tabview](#mysql-tabview)
+    - [mysql 基本信息](#mysql-基本信息)
+    - [perf 监测mysql 内存](#perf-监测mysql-内存)
 
 
 ## ubuntu基础环境搭建
@@ -264,6 +273,66 @@ mysql> explain select emp_no from employees;
 | filtered | 查询的表行占表的百分比 | | 
 | Extra | 包含不适合在其它列中显示但十分重要的额外信息| | 
 
+### load data 语句优化
+
+> LOAD DATA INFILE语句用于高速地从一个文本文件中读取行，并写入一个表中。文件名称必须为一个文字字符串。
+LOAD DATA INFILE 是 SELECT ... INTO OUTFILE 的相对语句。把表的数据备份到文件使用SELECT ... INTO OUTFILE，从备份文件恢复表数据，使用 LOAD DATA INFILE。  
+
+测试:
+```sh
+# 创建表格
+create table testLoadData(
+ id bigint(20) not null auto_increment,
+ username char(10) not null,
+ age tinyint(3) UNSIGNED not null,
+ description  text not null,
+ primary key(id),
+ unique key(username)
+)engine=myisam default charset=utf8;
+```
+
+> 注意：charset为utf8,下面在创建txt时，字符编码应该也为utf8，不然导入数据的中文会出现乱码。  
+
+编辑数据`loaddata.txt`:
+```sh
+"李明","20","相貌好，人品好！哈哈"
+"黎明","21","人好心善！哈哈"
+"李静","20","相貌平常！哈哈"
+"赵明","24","很强"
+"赵敏","34","XXXXX"
+"赵鑫","52","***%*￥*￥*￥*￥"
+"钱鑫","45","都是钱啊。。。"
+"几米","12","棒棒哒小说家"
+"李毅","21","小学同学呢"
+"皮皮","52","乖巧的孩子一个"
+"周州","96","非常英俊"
+"李浩","10","不知道说什么好"
+"韦唯","20","美美的的姑娘"
+"郑伊","20","的确是好个好人"
+"周丽","10","学习很好"
+"马青","60","大家的评价很高啊"
+"华克","100","威武的不行了"
+"邹平邑","63","吃货一个"
+"喆力","15","想到的都是吃"
+```
+
+导入数据:
+```sh
+LOAD DATA local INFILE '/root/loaddata.txt' IGNORE INTO TABLE testLoadData FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n' ignore 1 lines (username, age, description);
+```
+
+查询数量:
+```sh
+mysql> select count(*) from testLoadData;
++----------+
+| count(*) |
++----------+
+|       18 |
++----------+
+1 row in set (0.00 sec)
+```
+
+> 虽然mysql写数据不会立刻写入到磁盘，但是需要注意磁盘的IO占用及磁盘类型(机械或固态，是否有READ卡)  
 
 ### B-Tree与B+Tree
 一般说MySQL的索引，都清楚其索引主要以B+树为主，此外还有Hash、RTree、FullText。  
@@ -322,3 +391,431 @@ mysql> explain select emp.emp_no,emp.first_name,emp.last_name
 ```
 
 
+## 内存占用分析  
+
+首先分析进程:  
+```sh
+ps -ef | grep mysql
+mysql     1656     1  2 Aug19 ?        05:28:25 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.pid
+
+top -p 1656
+top - 19:14:55 up 10 days,  2:24,  5 users,  load average: 0.03, 0.09, 0.12
+Tasks:   1 total,   0 running,   1 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.4 us,  0.2 sy,  0.0 ni, 99.3 id,  0.1 wa,  0.0 hi,  0.0 si,  0.0 st
+KiB Mem : 15234328 total,  9257480 free,  3519424 used,  2457424 buff/cache
+KiB Swap:  7733244 total,  7733244 free,        0 used. 11363192 avail Mem 
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                           
+ 1656 mysql     20   0 5946756   1.1g  10904 S   0.0  7.3 328:25.64 mysqld 
+
+# 查看进程信息
+cat /proc/1656/status 
+Name:   mysqld
+Umask:  0026
+State:  S (sleeping)
+Tgid:   1656
+Ngid:   0
+Pid:    1656
+PPid:   1
+TracerPid:      0
+Uid:    997     997     997     997
+Gid:    1000    1000    1000    1000
+FDSize: 256
+Groups: 1000 
+VmPeak:  5946756 kB
+VmSize:  5946756 kB
+VmLck:         0 kB
+VmPin:         0 kB
+VmHWM:   1104852 kB
+VmRSS:   1104852 kB       # 占用的真实内存  
+RssAnon:         1093948 kB
+RssFile:           10904 kB
+RssShmem:              0 kB
+VmData:  5866980 kB
+VmStk:       132 kB
+VmExe:     25184 kB
+VmLib:      5180 kB
+VmPTE:      2496 kB
+VmSwap:        0 kB
+Threads:        72
+
+```
+
+占用内存是:`1.1g`  
+
+https://dev.mysql.com/doc/refman/8.0/en/memory-use.html  
+
+> 需要统计各个组件占用的内存，然后汇总总大小，是否符合预期.  
+
+
+查看内存,整体使用内存，并只展示2级，2级以下已经合并:
+```sh
+use sys;
+
+SELECT SUBSTRING_INDEX(event_name,'/',2) AS code_area,
+   format_bytes(SUM(current_alloc)) AS current_alloc
+FROM sys.x$memory_global_by_current_bytes
+GROUP BY SUBSTRING_INDEX(event_name,'/',2)
+ORDER BY SUM(current_alloc) DESC
+
++---------------------------+---------------+
+| code_area                 | current_alloc |
++---------------------------+---------------+
+| memory/performance_schema | 154.17 MiB    |
+| memory/sql                | 3.18 MiB      |
+| memory/innodb             | 412.50 KiB    |
+| memory/memory             | 174.01 KiB    |
+| memory/mysys              | 86.41 KiB     |
+| memory/myisam             | 39.46 KiB     |
++---------------------------+---------------+
+6 rows in set (0.00 sec)
+
+SELECT SUBSTRING_INDEX(event_name,'/',2) AS code_area,
+   format_bytes(SUM(current_alloc)) AS current_alloc
+FROM sys.memory_global_by_current_bytes
+GROUP BY SUBSTRING_INDEX(event_name,'/',2)
+ORDER BY SUM(current_alloc) DESC;
+
++---------------------------+---------------+
+| code_area                 | current_alloc |
++---------------------------+---------------+
+| memory/sql                | 8.73 KiB      |
+| memory/performance_schema | 7.16 KiB      |
+| memory/innodb             | 4.03 KiB      |
+| memory/myisam             | 1.10 KiB      |
+| memory/vio                | 1000 bytes    |
+| memory/mysys              | 911 bytes     |
+| memory/blackhole          | 512 bytes     |
+| memory/csv                | 512 bytes     |
+| memory/memory             | 218 bytes     |
++---------------------------+---------------+
+9 rows in set (0.00 sec)
+```
+
+buffer_pool占用比:
+```sh
+SELECT CONCAT(FORMAT(A.num * 100.0 / B.num,2),'%') `BufferPool %` FROM
+    (SELECT variable_value num FROM performance_schema.global_status
+    WHERE variable_name = 'Innodb_buffer_pool_pages_data') A,
+    (SELECT variable_value num FROM performance_schema.global_status
+    WHERE variable_name = 'Innodb_buffer_pool_pages_total') B;
+
++--------------+
+| BufferPool % |
++--------------+
+| 14.43%       |
++--------------+
+1 row in set (0.00 sec)
+```
+
+```sh
+mysql> show global variables like '%buffer%';
++-------------------------------------+----------------+
+| Variable_name                       | Value          |
++-------------------------------------+----------------+
+| bulk_insert_buffer_size             | 8388608        |
+| innodb_buffer_pool_chunk_size       | 134217728      |
+| innodb_buffer_pool_dump_at_shutdown | ON             |
+| innodb_buffer_pool_dump_now         | OFF            |
+| innodb_buffer_pool_dump_pct         | 25             |
+| innodb_buffer_pool_filename         | ib_buffer_pool |
+| innodb_buffer_pool_instances        | 8              |
+| innodb_buffer_pool_load_abort       | OFF            |
+| innodb_buffer_pool_load_at_startup  | ON             |
+| innodb_buffer_pool_load_now         | OFF            |
+| innodb_buffer_pool_size             | 3221225472     |
+| innodb_change_buffer_max_size       | 25             |
+| innodb_change_buffering             | all            |
+| innodb_log_buffer_size              | 16777216       |
+| innodb_sort_buffer_size             | 1048576        |
+| join_buffer_size                    | 262144         |
+| key_buffer_size                     | 8388608        |
+| myisam_sort_buffer_size             | 8388608        |
+| net_buffer_length                   | 16384          |
+| preload_buffer_size                 | 32768          |
+| read_buffer_size                    | 131072         |
+| read_rnd_buffer_size                | 262144         |
+| sort_buffer_size                    | 262144         |
+| sql_buffer_result                   | OFF            |
++-------------------------------------+----------------+
+24 rows in set (0.00 sec)
+```
+
+占用大小为:  `3221225472 * 0.14 = 430M` 左右  
+
+查看引擎的状态:`SHOW ENGINE INNODB STATUS;`   
+
+```sh
+SELECT 
+    'innodb_buffer_pool_size' AS `Parameter`,
+    ROUND((@@innodb_buffer_pool_size / 1024 / 1024), 2) AS `Value in MB`
+UNION
+SELECT 
+    'query_cache_size',
+    ROUND((@@query_cache_size / 1024 / 1024), 2) AS `Value in MB`
+UNION
+SELECT 
+    'thread_cache_size',
+    ROUND((@@thread_cache_size * 16 * 1024) / 1024 / 1024, 2) -- 估算，基于每个线程大约占用 16KB
+UNION
+SELECT 
+    'table_open_cache',
+    ROUND((@@table_open_cache * 2 * 1024) / 1024 / 1024, 2) -- 估算，基于每个表打开占用大约 2KB
+UNION
+SELECT 
+    'innodb_log_buffer_size',
+    ROUND((@@innodb_log_buffer_size / 1024 / 1024), 2)
+UNION
+SELECT 
+    'sort_buffer_size',
+    ROUND((@@sort_buffer_size / 1024 / 1024), 2)
+UNION
+SELECT 
+    'read_buffer_size',
+    ROUND((@@read_buffer_size / 1024 / 1024), 2)
+UNION
+SELECT 
+    'read_rnd_buffer_size',
+    ROUND((@@read_rnd_buffer_size / 1024 / 1024), 2)
+UNION
+SELECT 
+    'key_buffer_size',
+    ROUND((@@key_buffer_size / 1024 / 1024), 2)
+UNION
+SELECT 
+    'read_buffer_size',
+    ROUND((@@read_buffer_size / 1024 / 1024), 2);
+
+```
+
+统计各个模块的占用:
+```sh
++-------------------------+-------------+
+| Parameter               | Value in MB |
++-------------------------+-------------+
+| innodb_buffer_pool_size |     3072.00 |
+| query_cache_size        |        1.00 |
+| thread_cache_size       |        0.44 |
+| table_open_cache        |        2.87 |
+| innodb_log_buffer_size  |       16.00 |
+| sort_buffer_size        |        0.25 |
+| read_buffer_size        |        0.13 |
+| read_rnd_buffer_size    |        0.25 |
++-------------------------+-------------+
+```
+
+
+开启分析视图:`SHOW VARIABLES LIKE 'performance_schema';`  
+
+
+
+```sh
+memory_summary_by_account_by_event_name：账号的内存监控表
+memory_summary_by_host_by_event_name：主机的内存监控表
+memory_summary_by_thread_by_event_name：线程的内存监控表
+memory_summary_by_user_by_event_name：用户的内存监控表
+memory_summary_global_by_event_name：全局的内存监控表
+
+```
+
+
+`memory_summary_by_host_by_event_name：主机的内存监控表`
+```sh
+select EVENT_NAME,SUM_NUMBER_OF_BYTES_ALLOC/1024/1024 as `total(M)`, CURRENT_NUMBER_OF_BYTES_USED/1024/1024 as `used(M)` from memory_summary_by_host_by_event_name where CURRENT_NUMBER_OF_BYTES_USED > 1024*1024;
+```
+结果:
+```sh
++-------------------+-------------+------------+
+| EVENT_NAME        | total(M)    | used(M)    |
++-------------------+-------------+------------+
+| memory/innodb/std | 57.42578888 | 4.07171631 |
++-------------------+-------------+------------+
+```
+
+
+`memory_summary_global_by_event_name：全局的内存监控表`
+```sh
+use performance_schema;
+
+select EVENT_NAME,SUM_NUMBER_OF_BYTES_ALLOC/1024/1024 as `total(M)`, CURRENT_NUMBER_OF_BYTES_USED/1024/1024 as `used(M)` from memory_summary_global_by_event_name where CURRENT_NUMBER_OF_BYTES_USED > 1024*1024;
+```
+
+结果看山去没有异常
+```sh
++------------------------------------------------------------------------------+-------------+-------------+
+| EVENT_NAME                                                                   | total(M)    | used(M)     |
++------------------------------------------------------------------------------+-------------+-------------+
+| memory/performance_schema/mutex_instances                                    |  1.37500000 |  1.37500000 |
+| memory/performance_schema/file_instances                                     |  2.75000000 |  2.75000000 |
+| memory/performance_schema/events_waits_summary_by_account_by_event_name      |  1.69531250 |  1.69531250 |
+| memory/performance_schema/events_statements_summary_by_account_by_event_name |  4.33496094 |  4.33496094 |
+| memory/performance_schema/memory_summary_by_account_by_event_name            |  2.81250000 |  2.81250000 |
+```
+
+
+#### 统计分析
+
+```sh
+select TABLE_NAME,sys.format_bytes(SUM(data_size)) AS data
+from information_schema.innodb_buffer_page
+where TABLE_NAME LIKE '%smp%'
+GROUP BY TABLE_NAME
+```
+> smp 是表名称  
+
+所以大小占用:  
+```sh
++-------------------------------------------+------------+
+| TABLE_NAME                                | data       |
++-------------------------------------------+------------+
+| `smp`.`audit_ip_mac_bind`                 | 0 bytes    |
+| `smp`.`audit_network_attack`              | 0 bytes    |
+| `smp`.`t_equip_code`                      | 297 bytes  |
+| `smp`.`t_forward_child_task`              | 448.41 MiB |
+| `smp`.`t_forward_task`                    | 777.20 KiB |
+| `smp`.`t_func_list`                       | 5.82 KiB   |
+| `smp`.`t_manufacturer`                    | 38 bytes   |
+| `smp`.`t_safe_baseline`                   | 0 bytes    |
+| `smp`.`t_safe_event_define`               | 186 bytes  |
+```
+
+> t_forward_child_task 占用索引448M  
+
+01.innodb_buffer_stats_by_schema,x$innodb_buffer_stats_by_schema
+按照schema分组的 InnoDB buffer pool统计信息，默认按照分配的buffer size大小降序排序--allocated字段。数据来源：information_schema.innodb_buffer_page 
+
+```sql
+SELECT IF(LOCATE('.', ibp.table_name) = 0, 'InnoDB System', REPLACE(SUBSTRING_INDEX(ibp.table_name, '.', 1), '`', '')) AS object_schema,
+  sys.format_bytes(SUM(IF(ibp.compressed_size = 0, 16384, compressed_size))) AS allocated,
+  sys.format_bytes(SUM(ibp.data_size)) AS data,
+  COUNT(ibp.page_number) AS pages,
+  COUNT(IF(ibp.is_hashed = 'YES', 1, NULL)) AS pages_hashed,
+  COUNT(IF(ibp.is_old = 'YES', 1, NULL)) AS pages_old,
+  ROUND(SUM(ibp.number_records)/COUNT(DISTINCT ibp.index_name)) AS rows_cached
+FROM information_schema.innodb_buffer_page ibp
+WHERE table_name IS NOT NULL
+GROUP BY object_schema
+ORDER BY SUM(IF(ibp.compressed_size = 0, 16384, compressed_size)) DESC;
+```
+
+```sh
++---------------+------------+------------+-------+--------------+-----------+-------------+
+| object_schema | allocated  | data       | pages | pages_hashed | pages_old | rows_cached |
++---------------+------------+------------+-------+--------------+-----------+-------------+
+| smp           | 423.09 MiB | 385.03 MiB | 27078 |          387 |      9291 |      108112 |
+| InnoDB System | 14.42 MiB  | 13.10 MiB  |   923 |            1 |        57 |       12561 |
+| mysql         | 832.00 KiB | 365.78 KiB |    52 |            9 |        52 |        2033 |
++---------------+------------+------------+-------+--------------+-----------+-------------+
+```
+
+> object_schema：schema级别对象的名称，如果该表属于Innodb存储引擎，则该字段显示为InnoDB System，如果是其他引擎，则该字段显示为每个schema name.
+allocated：当前已分配给schema的总内存字节数
+data：当前已分配给schema的数据部分使用的内存字节总数
+pages：当前已分配给schema内存总页数
+pages_hashed：当前已分配给schema的自适应hash索引页总数
+pages_old：当前已分配给schema的旧页总数（位于LRU列表中的旧块子列表中的页数）
+rows_cached：buffer pool中为schema缓冲的总数据行数
+
+
+02.innodb_buffer_stats_by_table,x$innodb_buffer_stats_by_table
+按照schema和表分组的 InnoDB buffer pool 统计信息，与sys.innodb_buffer_stats_by_schema视图类似，但是本视图是按照schema name和table name分组。数据来源：information_schema.innodb_buffer_page
+
+```sql
+SELECT IF(LOCATE('.', ibp.table_name) = 0, 'InnoDB System', REPLACE(SUBSTRING_INDEX(ibp.table_name, '.', 1), '`', '')) AS object_schema,
+  REPLACE(SUBSTRING_INDEX(ibp.table_name, '.', -1), '`', '') AS object_name,
+  sys.format_bytes(SUM(IF(ibp.compressed_size = 0, 16384, compressed_size))) AS allocated,
+  sys.format_bytes(SUM(ibp.data_size)) AS data,
+  COUNT(ibp.page_number) AS pages,
+  COUNT(IF(ibp.is_hashed = 'YES', 1, NULL)) AS pages_hashed,
+  COUNT(IF(ibp.is_old = 'YES', 1, NULL)) AS pages_old,
+  ROUND(SUM(ibp.number_records)/COUNT(DISTINCT ibp.index_name)) AS rows_cached
+FROM information_schema.innodb_buffer_page ibp
+WHERE table_name IS NOT NULL
+GROUP BY object_schema, object_name
+ORDER BY SUM(IF(ibp.compressed_size = 0, 16384, compressed_size)) DESC;
+```
+
+```sh
++---------------+-----------------------------------+------------+------------+-------+--------------+-----------+-------------+
+| object_schema | object_name                       | allocated  | data       | pages | pages_hashed | pages_old | rows_cached |
++---------------+-----------------------------------+------------+------------+-------+--------------+-----------+-------------+
+| smp           | t_forward_child_task              | 409.52 MiB | 377.16 MiB | 26209 |           17 |      9120 |     5163169 |
+| InnoDB System | SYS_TABLES                        | 35.22 MiB  | 32.44 MiB  |  2254 |            0 |        36 |      108367 |
+| smp           | t_equipment                       | 8.42 MiB   | 5.81 MiB   |   539 |          289 |       439 |        8042 |
+| smp           | sys_opera_log                     | 800.00 KiB | 653.43 KiB |    50 |           39 |        16 |        1619 |
+| smp           | t_forward_task                    | 736.00 KiB | 653.42 KiB |    46 |            0 |        17 |        3771 |
+| smp           | sys_casbin_rule                   | 544.00 KiB | 335.26 KiB |    34 |           13 |        11 |        2094 |
+| mysql         | help_topic                        | 224.00 KiB | 151.53 KiB |    14 |            0 |        14 |         353 |
+```
+
+
+object_name：表级别对象名称，通常是表名
+其他字段含义与sys.innodb_buffer_stats_by_schema视图字段含义相同，详见 innodb_buffer_stats_by_schema,x$innodb_buffer_stats_by_schema视图解释部分。但这些字段是按照object_name表级别统计的
+
+
+03.memory_by_host_by_current_bytes,x$memory_by_host_by_current_bytes
+按照客户端主机名分组的内存使用统计信息，默认情况下按照当前内存使用量降序排序，数据来源：performance_schema.memory_summary_by_host_by_event_name
+
+```sql
+select * from performance_schema.memory_by_host_by_current_bytes limit 3;
+```
+
+详细的sql语句:
+```sh
+select * from sys.x$memory_by_host_by_current_bytes;
+select * from sys.x$memory_by_thread_by_current_bytes;
+select * from sys.x$memory_by_user_by_current_bytes;
+select * from sys.x$memory_global_by_current_bytes;
+select * from sys.x$memory_global_total;
+select * from performance_schema.memory_summary_by_account_by_event_name;
+select * from performance_schema.memory_summary_by_host_by_event_name;
+select * from performance_schema.memory_summary_by_thread_by_event_name;
+select * from performance_schema.memory_summary_by_user_by_event_name;
+select * from performance_schema.memory_summary_global_by_event_name;
+select event_name,
+       current_alloc
+from sys.memory_global_by_current_bytes
+where event_name like '%innodb%';
+select event_name,current_alloc from sys.memory_global_by_current_bytes limit 5;
+select m.thread_id tid,
+       USER,
+       esc.DIGEST_TEXT,
+       total_allocated
+FROM sys.memory_by_thread_by_current_bytes m,
+     performance_schema.events_statements_current esc
+WHERE m.`thread_id` = esc.THREAD_ID \G
+```
+
+#### grafana  监测  
+https://grafana.com/grafana/dashboards/13266-mysql-memory-usage-details-designed-for-pmm2/  
+
+<br>
+<div align=center>
+<img src="../../../res/mysql-tool-1.jpeg" width="80%"></img>  
+</div>
+<br>
+
+
+#### mysql tabview  
+https://dev.mysql.com/doc/mysql-monitor/8.0/en/mem-reports-memory-usage-ref.html  
+
+
+performance-schema-instrument='memory/%=ON'
+
+#### mysql 基本信息
+
+`主机的当前连接数`,`主机的连接总数`,`当前为主机分配的内存量`  
+```sh
+select * from host_summary;
++-----------+------------+-------------------+-----------------------+-------------+----------+-----------------+---------------------+-------------------+--------------+----------------+------------------------+
+| host      | statements | statement_latency | statement_avg_latency | table_scans | file_ios | file_io_latency | current_connections | total_connections | unique_users | current_memory | total_memory_allocated |
++-----------+------------+-------------------+-----------------------+-------------+----------+-----------------+---------------------+-------------------+--------------+----------------+------------------------+
+| localhost |       3183 | 107.78 ms         | 33.86 us              |           5 |     1229 | 10.00 ms        |                   2 |                 2 |            1 | 2.79 MiB       | 31.85 MiB              |
++-----------+------------+-------------------+-----------------------+-------------+----------+-----------------+---------------------+-------------------+--------------+----------------+------------------------+
+```
+
+mysql 中文文档  
+https://www.docs4dev.com/docs/zh/mysql/5.7/reference/sys-memory-global-by-current-bytes.html  
+
+
+#### perf 监测mysql 内存  

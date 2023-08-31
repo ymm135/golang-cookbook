@@ -54,6 +54,7 @@
     - [myql 5.7 查询流程分析](md/middleware/mysql/mysql-select-flow.md)  
     - [mysql 5.7性能测试](https://github.com/ymm135/unixsoket-mysql-prof)  
     - [mysql 8.0性能优化](md/middleware/mysql/mysql8-optimize.md)  
+    - [mysql 双机热备部署](md/middleware/mysql/mysql-ha.md)  
   - **nginx**
     - [nginx基础](md/middleware/nginx/nginx-base.md)  
 
