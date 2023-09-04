@@ -456,7 +456,7 @@ SELECT SUBSTRING_INDEX(event_name,'/',2) AS code_area,
    format_bytes(SUM(current_alloc)) AS current_alloc
 FROM sys.x$memory_global_by_current_bytes
 GROUP BY SUBSTRING_INDEX(event_name,'/',2)
-ORDER BY SUM(current_alloc) DESC
+ORDER BY SUM(current_alloc) DESC;
 
 +---------------------------+---------------+
 | code_area                 | current_alloc |
@@ -819,3 +819,46 @@ https://www.docs4dev.com/docs/zh/mysql/5.7/reference/sys-memory-global-by-curren
 
 
 #### perf 监测mysql 内存  
+
+
+## 疑问解答
+### `show tables` 看不到某些表  
+
+mysql information_schema有些表通过show tables查看不存在，但是通过sql语句又能够查看该表的数据，比如innodb_buffer_page,为什么？  
+
+这里的关键是：SHOW TABLES 通常显示的是物理表和视图，但 INFORMATION_SCHEMA 的某些表实际上是“虚拟”的，它们只是一个接口或窗口到服务器的内部数据结构。  
+
+```sh
+SHOW TABLES FROM INFORMATION_SCHEMA;
+```
+
+```sh
++---------------------------------------+
+| Tables_in_INFORMATION_SCHEMA          |
++---------------------------------------+
+| INNODB_SYS_FIELDS                     |
+| INNODB_CMP_PER_INDEX_RESET            |
+| INNODB_BUFFER_PAGE                    |
+| INNODB_FT_DEFAULT_STOPWORD            |
+| INNODB_FT_INDEX_TABLE                 |
+| INNODB_FT_INDEX_CACHE                 |
+```
+
+### performance_schema虚拟表  
+
+在 MySQL 上下文中，当我们提及“虚拟表”，我们主要是指在 INFORMATION_SCHEMA 和 performance_schema 数据库中的一些特殊表。这些表并不持有真正的数据，它们不在磁盘上作为持久化数据存储，而是提供一个查看 MySQL 内部状态和元数据的窗口。
+
+以下是关于这些虚拟表的一些关键点：
+
+不是物理存储的：这些表中的数据并不是像传统的 MySQL 表那样存储在磁盘上。相反，当你查询这些表时，MySQL 会动态地从其内部数据结构中检索这些信息。
+
+动态数据：由于它们是实时从服务器内部检索的，所以这些表中的数据是动态的，经常变化的。
+
+只读：虽然这些表看起来像普通的 MySQL 表，但你不能向它们插入、更新或删除数据。它们主要用于查询和监视。
+
+例如，INFORMATION_SCHEMA 中的表提供了数据库、表、列、索引等的元数据，而 performance_schema 中的表提供了关于服务器性能的数据。
+
+使用这些虚拟表的好处是，它们为数据库管理员和开发人员提供了一种非常方便的方式来查看数据库的内部工作和状态，而不需要使用特殊的命令或工具。
+
+总之，虚拟表是 MySQL 提供的一种查看其内部状态、配置和性能数据的方式，它们像普通表一样被查询，但不持有实际的、在磁盘上持久化的数据。  
+
