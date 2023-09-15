@@ -862,3 +862,106 @@ SHOW TABLES FROM INFORMATION_SCHEMA;
 
 总之，虚拟表是 MySQL 提供的一种查看其内部状态、配置和性能数据的方式，它们像普通表一样被查询，但不持有实际的、在磁盘上持久化的数据。  
 
+## mysql cpu占用  
+
+查看整体占用:
+```sh
+   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                          
+  2043 mysql     20   0 8066324 684552  10212 S 798.3  2.1   8414:01 mysqld                                                           
+  2529 root      20   0 1957408 601176  17728 S   0.7  1.8  17:11.45 go-admin                                                         
+     1 root      20   0  194100   5636   3572 S   0.0  0.0   1:53.48 systemd                                                          
+     2 root      20   0       0      0      0 S   0.0  0.0   0:00.02 kthreadd                                                         
+     4 root       0 -20       0      0      0 S   0.0  0.0   0:00.00 kworker/0:0H                                                     
+     6 root      20   0       0      0      0 S   0.0  0.0   0:02.05 ksoftirqd/0 
+```
+
+> mysql 占用 798.3 %  基本8个核跑满了  
+
+`top -H -p 2043` 查看线程占用信息:  
+```sh
+375687 mysql     20   0 8066324 684816  10212 R  8.6  2.1  84:12.67 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375752 mysql     20   0 8066324 684816  10212 R  8.6  2.1  84:03.94 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+376091 mysql     20   0 8066324 684816  10212 R  8.6  2.1  83:03.39 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+376092 mysql     20   0 8066324 684816  10212 R  8.6  2.1  83:05.43 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+376331 mysql     20   0 8066324 684816  10212 R  8.6  2.1  82:54.01 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+  2636 mysql     20   0 8066324 684816  10212 R  8.3  2.1  91:21.45 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+ 18645 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:51.20 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+373115 mysql     20   0 8066324 684816  10212 R  8.3  2.1  85:10.20 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+373118 mysql     20   0 8066324 684816  10212 R  8.3  2.1  85:04.88 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375583 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:50.84 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375620 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:31.43 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375666 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:23.32 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375667 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:09.19 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375670 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:18.56 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375683 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:10.47 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375730 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:01.77 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375735 mysql     20   0 8066324 684816  10212 R  8.3  2.1  83:59.09 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375751 mysql     20   0 8066324 684816  10212 R  8.3  2.1  84:05.95 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p+ 
+375802 mysql     20   0 8066324 684816  10212 R  8.3  2.1  83:50.98 /usr/sbin/mysqld --daemonize --pid-file=/var/run/mysqld/mysqld.p
+...
+```
+
+```sh
+apt install sysstat
+
+pidstat -t -p 2043 1 5 
+
+Average:      UID      TGID       TID    %usr %system  %guest    %CPU   CPU  Command
+Average:      997      2043         -  748.34   48.53    0.00  796.87     -  mysqld
+Average:      997         -      2043    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2245    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2307    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2308    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2309    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2310    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2311    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2312    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2313    0.00    0.20    0.00    0.20     -  |__mysqld
+Average:      997         -      2314    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2315    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2316    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2317    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2318    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2319    0.00    0.00    0.00    0.00     -  |__mysqld
+Average:      997         -      2320    0.00    0.00    0.00    0.00     -  |__mysqld
+
+```
+
+查看`mysql`的进程信息:
+```sh
+mysql> show processlist;
++-----+----------------+-----------------+------+---------+------+--------------+---------------------------------------------------------------------+
+| Id  | User           | Host            | db   | Command | Time | State        | Info                                                                |
++-----+----------------+-----------------+------+---------+------+--------------+---------------------------------------------------------------------+
+|  13 | root           | localhost:24318 | smp  | Sleep   |    4 |              | NULL                                                                |
+|  14 | root           | localhost:24326 | smp  | Sleep   |    4 |              | NULL                                                                |
+|  15 | root           | localhost:24340 | smp  | Sleep   |    4 |              | NULL                                                                |
+|  16 | root           | localhost:24410 | smp  | Sleep   |    4 |              | NULL                                                                |
+|  17 | root           | localhost:24607 | smp  | Sleep   |    4 |              | NULL                                                                |
+|  18 | root           | localhost:24606 | smp  | Sleep   |    4 |              | NULL                                                                |
+|  53 | root           | localhost:42868 | smp  | Execute |   14 | Sending data | SELECT * FROM `log_1` WHERE uuid=? AND `log_1`.`deleted_at` IS NULL |
+|  54 | root           | localhost:42872 | smp  | Execute |   11 | Sending data | SELECT * FROM `log_1` WHERE uuid=? AND `log_1`.`deleted_at` IS NULL |
+|  55 | root           | localhost:42874 | smp  | Execute |    5 | Sending data | SELECT * FROM `log_1` WHERE uuid=? AND `log_1`.`deleted_at` IS NULL |
+|  56 | root           | localhost:42876 | smp  | Execute |   16 | Sending data | SELECT * FROM `log_1` WHERE uuid=? AND `log_1`.`deleted_at` IS NULL |
+...
+```
+
+>`Sending data` 线程正在读取和处理 SELECT 的行记录，发送给客户端，由于在这个状态下的操作会执行大量的磁盘访问（读），因此它通常是查询生命周期最长的状态。  
+
+查看单个线程`375687`(操作系统的线程信息)  
+```sh
+select a.user,a.host,a.db,b.thread_os_id,b.thread_id,a.id processlist_id,a.command,a.time,a.state,a.info from information_schema.processlist a,performance_schema.threads b where a.id = b.processlist_id and b.thread_os_id=375687;
+
++------+-----------------+------+--------------+-----------+----------------+---------+------+--------------+---------------------------------------------------------------------+
+| user | host            | db   | thread_os_id | thread_id | processlist_id | command | time | state        | info                                                                |
++------+-----------------+------+--------------+-----------+----------------+---------+------+--------------+---------------------------------------------------------------------+
+| root | localhost:43056 | smp  |       375687 |        97 |             72 | Execute |   15 | Sending data | SELECT * FROM `log_1` WHERE uuid=? AND `log_1`.`deleted_at` IS NULL |
++------+-----------------+------+--------------+-----------+----------------+---------+------+--------------+---------------------------------------------------------------------+
+```
+
+查看线程的其他信息:
+```sh
+select * from performance_schema.events_statements_current where thread_id in (select thread_id from performance_schema.threads where thread_os_id = 375687)\G;
+```
+
+

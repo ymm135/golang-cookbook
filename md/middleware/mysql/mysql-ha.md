@@ -134,7 +134,15 @@ auto-increment-offset=2
 
 增加主用户权限
 ```sh
-CHANGE MASTER TO MASTER_HOST='master_ip',MASTER_USER='master_user',MASTER_PASSWORD='password',MASTER_LOG_FILE='mysql-bin.000001',MASTER_LOG_POS=154;
+- [环境搭建](#环境搭建)
+  - [简介](#简介)
+  - [配置](#配置)
+    - [主服务器配置](#主服务器配置)
+    - [从服务器配置](#从服务器配置)
+- [测试](#测试)
+- [疑问拓展](#疑问拓展)
+  - [redis双机热备](#redis双机热备)
+
 
 START SLAVE;
 
@@ -281,3 +289,198 @@ OK
 127.0.0.1:6379> get slave-test
 "true"
 ```
+
+查看redis状态:
+```sh
+127.0.0.1:6379> info
+# Server
+redis_version:5.0.7
+redis_git_sha1:00000000
+redis_git_dirty:0
+redis_build_id:66bd629f924ac924
+redis_mode:standalone
+os:Linux 5.4.0-155-generic x86_64
+arch_bits:64
+multiplexing_api:epoll
+atomicvar_api:atomic-builtin
+gcc_version:9.3.0
+process_id:32138
+run_id:0b07d3e6576b260648772ab132e5fc735f8ec601
+tcp_port:6379
+uptime_in_seconds:654
+uptime_in_days:0
+hz:10
+configured_hz:10
+lru_clock:16303477
+executable:/usr/bin/redis-server
+config_file:/etc/redis/redis.conf
+
+# Clients
+connected_clients:2
+client_recent_max_input_buffer:2
+client_recent_max_output_buffer:0
+blocked_clients:0
+
+# Memory
+used_memory:1090168
+used_memory_human:1.04M
+used_memory_rss:7233536
+used_memory_rss_human:6.90M
+used_memory_peak:1090168
+used_memory_peak_human:1.04M
+used_memory_peak_perc:100.09%
+used_memory_overhead:863624
+used_memory_startup:796264
+used_memory_dataset:226544
+used_memory_dataset_perc:77.08%
+allocator_allocated:1247104
+allocator_active:1585152
+allocator_resident:4288512
+total_system_memory:10431987712
+total_system_memory_human:9.72G
+used_memory_lua:41984
+used_memory_lua_human:41.00K
+used_memory_scripts:0
+used_memory_scripts_human:0B
+number_of_cached_scripts:0
+maxmemory:0
+maxmemory_human:0B
+maxmemory_policy:noeviction
+allocator_frag_ratio:1.27
+allocator_frag_bytes:338048
+allocator_rss_ratio:2.71
+allocator_rss_bytes:2703360
+rss_overhead_ratio:1.69
+rss_overhead_bytes:2945024
+mem_fragmentation_ratio:6.90
+mem_fragmentation_bytes:6185352
+mem_not_counted_for_evict:0
+mem_replication_backlog:0
+mem_clients_slaves:0
+mem_clients_normal:66616
+mem_aof_buffer:0
+mem_allocator:jemalloc-5.2.1
+active_defrag_running:0
+lazyfree_pending_objects:0
+
+# Persistence
+loading:0
+rdb_changes_since_last_save:0
+rdb_bgsave_in_progress:0
+rdb_last_save_time:1694024423
+rdb_last_bgsave_status:ok
+rdb_last_bgsave_time_sec:-1
+rdb_current_bgsave_time_sec:-1
+rdb_last_cow_size:0
+aof_enabled:0
+aof_rewrite_in_progress:0
+aof_rewrite_scheduled:0
+aof_last_rewrite_time_sec:-1
+aof_current_rewrite_time_sec:-1
+aof_last_bgrewrite_status:ok
+aof_last_write_status:ok
+aof_last_cow_size:0
+
+# Stats
+total_connections_received:439
+total_commands_processed:471
+instantaneous_ops_per_sec:0
+total_net_input_bytes:348011
+total_net_output_bytes:30530
+instantaneous_input_kbps:0.00
+instantaneous_output_kbps:0.00
+rejected_connections:0
+sync_full:0
+sync_partial_ok:0
+sync_partial_err:0
+expired_keys:0
+expired_stale_perc:0.00
+expired_time_cap_reached_count:0
+evicted_keys:0
+keyspace_hits:5
+keyspace_misses:21
+pubsub_channels:0
+pubsub_patterns:0
+latest_fork_usec:0
+migrate_cached_sockets:0
+slave_expires_tracked_keys:0
+active_defrag_hits:0
+active_defrag_misses:0
+active_defrag_key_hits:0
+active_defrag_key_misses:0
+
+# Replication
+role:slave
+master_host:10.25.10.52
+master_port:6739
+master_link_status:down
+master_last_io_seconds_ago:-1
+master_sync_in_progress:0
+slave_repl_offset:1
+master_link_down_since_seconds:1694025077
+slave_priority:100
+slave_read_only:1
+connected_slaves:0
+master_replid:c2d88dc49278b196d987ef91b3d3aa2a2739e41a
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:0
+second_repl_offset:-1
+repl_backlog_active:0
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:0
+repl_backlog_histlen:0
+
+# CPU
+used_cpu_sys:0.459283
+used_cpu_user:0.485538
+used_cpu_sys_children:0.000000
+used_cpu_user_children:0.000000
+
+# Cluster
+cluster_enabled:0
+
+# Keyspace
+db0:keys=14,expires=1,avg_ttl=0
+```
+
+主从相关的配置
+```sh
+role:slave
+master_host:10.25.10.52
+master_port:6739
+master_link_status:down
+master_last_io_seconds_ago:-1
+master_sync_in_progress:0
+slave_repl_offset:1
+master_link_down_since_seconds:1694025077
+slave_priority:100
+slave_read_only:1
+```
+
+在Redis 6.0之前的版本中，从服务器（slave）是始终只读的，无法通过内置选项来配置从服务器为读写模式。这是因为Redis早期的设计中，从服务器的主要目的是用于数据备份和读取负载均衡，而不是用于写入操作。  
+
+### Duplicate entry '17' for key 'PRIMARY',
+Could not execute Write_rows event on table firewall.security_policy_manager; Duplicate entry '17' for key 'PRIMARY', Error_code: 1062; handler error HA_ERR_FOUND_DUPP_KEY; the event's master log mysql-bin.000004, end_log_pos 20953  
+
+可以不用增加binlog的同步位置:  
+```sql
+CHANGE MASTER TO MASTER_HOST='192.168.100.1',MASTER_USER='root',MASTER_PASSWORD='pass';
+```
+
+> 如果删除没有同步之前的数据，从数据库会找不到该id，也会报错。所以要先确保数据是一致的。  
+
+### master and slave have equal MySQL server ids  
+ Fatal error: The slave I/O thread stops because master and slave have equal MySQL server ids; these ids must be different for replication to work (or the --replicate-same-server-id option must be used on slave but this does not always make sense; please check the manual before using it).
+
+首先已经确保配置文件总的id不相同了，sql语句查询到也是不同的，但是仍然有该问题？  
+```sql
+CHANGE MASTER TO MASTER_HOST='192.168.100.1',MASTER_USER='root',MASTER_PASSWORD='pass';
+```
+
+配置文件出错了，配置的`MASTER_HOST`是自己，所以一直报错.  
+
+
+
+
+
+
