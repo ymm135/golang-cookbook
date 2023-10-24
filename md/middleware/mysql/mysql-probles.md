@@ -62,6 +62,54 @@ mysql> CHECK TABLE log_base_policy;
 
 > 最后发现问题了，如果在优化时`optimizer`，为了减小表的大小，这时突然断电，那就会导致表无法使用了。  
 
+### 如何手工复现`表损坏`  
+
+```sh
+dd if=/dev/random of=/path-to-mysql-data-directory/数据库名/表名.ibd bs=1 count=1024 seek=512
+```
+
+修改
+```sh
+$ dd if=/dev/random of=log_threat_1.frm bs=1 count=1024 seek=512
+mysql> CHECK TABLE log_threat_1;
++-----------------------+-------+----------+--------------------------------------------------------------+
+| Table                 | Op    | Msg_type | Msg_text                                                     |
++-----------------------+-------+----------+--------------------------------------------------------------+
+| firewall.log_threat_1 | check | Error    | Incorrect information in file: './firewall/log_threat_1.frm' |
+| firewall.log_threat_1 | check | error    | Corrupt                                                      |
++-----------------------+-------+----------+--------------------------------------------------------------+
+2 rows in set (0.01 sec)
+
+# 这种表结构的损坏，不能再使用了，也查不到
+select * from information_schema.TABLES where table_schema = 'firewall' AND ENGINE = 'MyISAM'  
+
+
+$ dd if=/dev/random of=log_base_policy_1.MYD bs=1 count=10240 seek=512
+10240+0 records in
+10240+0 records out
+10240 bytes (10 kB, 10 KiB) copied, 0.0107179 s, 955 kB/s
+
+
+mysql> CHECK TABLE firewall.log_base_policy_1;
++----------------------------+-------+----------+--------------------------------------------------------+
+| Table                      | Op    | Msg_type | Msg_text                                               |
++----------------------------+-------+----------+--------------------------------------------------------+
+| firewall.log_base_policy_1 | check | warning  | Table is marked as crashed                             |
+| firewall.log_base_policy_1 | check | error    | Size of datafile is: 10752         Should be: 68424328 |
+| firewall.log_base_policy_1 | check | error    | Corrupt                                                |
++----------------------------+-------+----------+--------------------------------------------------------+
+3 rows in set (0.00 sec)
+
+$ 查询语句
+mysql> select * from log_base_policy_1 limit 1;
+ERROR 145 (HY000): Table './firewall/log_base_policy_1' is marked as crashed and should be repaired
+```
+
+> 如果是innoDB引擎，可以修改`table_name.ibd`. 其中包含索引与数据。myisam索引与数据是分离的。  
+> select * from information_schema.TABLES where table_schema = 'firewall' AND ENGINE = 'MyISAM' 在`navicat`中执行看不到损坏的表，但是通过mysql命令远程和本地连接都可以看到。   
+
+
+
 ## centos7 mysql启动问题
 
 之前启动方式从系统更改为`supervisor`,但是发现启动总会异常，mysql起不来，可能是supersor启动机制的问题。现在准备修改为原始方式:  
@@ -170,6 +218,57 @@ Trying to get some variables.
 Some pointers may be invalid and cause the dump to abort.
 Query (0): Connection ID (thread ID): 0
 Status: NOT_KILLED
-
-
 ```
+
+### 锁表
+出现异常时会锁表，无法释放
+```sh
+BEGIN;
+LOCK TABLES `firewall`.`user_setting` WRITE;
+INSERT INTO `firewall`.`user_setting` (`id`, `setting_code`, `setting_name`, `description`, `args`, `created_at`, `updated_at`, `deleted_at`) 
+VALUES (25, 'ct_status', '状态检测', '基于状态检测的防火墙', '0', NULL, NULL, NULL);
+INSERT INTO `firewall`.`user_setting` (`id`, `setting_code`, `setting_name`, `description`, `args`, `created_at`, `updated_at`, `deleted_at`) 
+VALUES (26, 'ct_status', '状态检测', '基于状态检测的防火墙', '0', NULLd, NULL, NULL);
+UNLOCK TABLES
+```
+> NULLd 故意出错,无法释放锁, 如果增加INSERT IGNORE , 即使重复也不会报错  
+
+
+msyqdump导出时，提示有问题:  
+```sh
+mysqldump: [Warning] Using a password on the command line interface can be insecure.
+mysqldump: Got error: 1146: Table 'audit.flow_datas_pop3' doesn't exist when using LOCK TABLES
+```
+
+该表确实不存你在:  
+```sh
+mysql> select * from audit.flow_datas_pop3;
+ERROR 1146 (42S02): Table 'audit.flow_datas_pop3' doesn't exist
+```
+
+但是`show tables`中还存在
+```sh
+| proto_detail_relation         |
+| proto_dnp3                    |
+| proto_ethercat                |
+| proto_fins                    |
+```
+
+数据库的文件:  权限也是正常的  
+```sh
+-rw-r----- 1 mysql mysql   13188 Jul 25  2022 flow_datas_pop3.frm
+-rw-r----- 1 mysql mysql  114688 Jul 25  2022 flow_datas_pop3.ibd
+```
+
+也没有看到表损坏的信息
+```sh
+mysql> select * from information_schema.TABLES where table_name='flow_datas_pop3';
+Empty set (0.00 sec)
+```
+
+
+
+
+
+
+
