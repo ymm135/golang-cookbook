@@ -1,8 +1,12 @@
 - # mysql 日常问题整理
 
 - [Mysql 表修复](#mysql-表修复)
+  - [如何手工复现`表损坏`](#如何手工复现表损坏)
 - [centos7 mysql启动问题](#centos7-mysql启动问题)
 - [mysql启动异常](#mysql启动异常)
+- [表锁](#表锁)
+  - [表锁异常场景](#表锁异常场景)
+  - [mysql表锁测试](#mysql表锁测试)
 
 
 ## Mysql 表修复  
@@ -220,7 +224,8 @@ Query (0): Connection ID (thread ID): 0
 Status: NOT_KILLED
 ```
 
-### 锁表
+## 表锁  
+### 表锁异常场景  
 出现异常时会锁表，无法释放
 ```sh
 BEGIN;
@@ -266,9 +271,99 @@ mysql> select * from information_schema.TABLES where table_name='flow_datas_pop3
 Empty set (0.00 sec)
 ```
 
+### mysql表锁测试  
+
+MySQL 的 MyISAM 和 InnoDB 是两种常用的存储引擎，它们在表锁的机制上存在显著的差异：
+
+- ### MyISAM:
+- **锁定机制**: MyISAM 只支持`表级锁`（`table-level locking`），不支持行级锁。
+- **影响**: 当一个用户对 MyISAM 表执行写操作（如 `INSERT`, `UPDATE`, `DELETE`）时，其他用户不能向表中插入新的记录，直到第一个用户完成操作。
+- **适用场景**: 由于这种锁定机制，MyISAM 更适合读取频繁但更新不太频繁的应用程序。
+
+- ### InnoDB:
+- **锁定机制**: InnoDB 支持`行级锁`（row-level locking）和外键约束。
+- **影响**: 这意味着当某个用户正在写某一行时，其他用户仍然可以写其他行。
+- **适用场景**: InnoDB 适合于需要频繁更新操作的应用。
+
+- ### 测试用例:
+
+1. **MyISAM 锁定测试**:
+   ```sql
+   -- 在 Session A:
+   CREATE TABLE test_myisam (id INT) ENGINE=MyISAM;
+   INSERT INTO test_myisam VALUES (1), (2), (3);
+   
+   LOCK TABLES table_name WRITE;
+   DELETE FROM test_myisam WHERE id=2; -- 这里我们不提交事务
+
+   -- 在 Session B:
+   INSERT INTO test_myisam VALUES (4); -- 这里会被阻塞，直到 Session A 提交或回滚事务。
+
+   -- 解锁 
+   UNLOCK TABLES;
+   ```
+
+2. **InnoDB 锁定测试**:
+   ```sql
+   -- 在 Session A:
+   DROP TABLE IF EXISTS test_innodb;
+   CREATE TABLE test_innodb (id INT PRIMARY KEY, value VARCHAR(50)) ENGINE=InnoDB;
+   INSERT INTO test_innodb VALUES (1, 'one'), (2, 'two'), (3, 'three');
+
+   
+   BEGIN;
+   DELETE FROM test_innodb WHERE id=2; -- 这里我们不提交事务
+   UPDATE test_innodb SET `value` = 'one_update' WHERE `id` = 1;
+
+   -- 在 Session B:
+   INSERT INTO test_innodb VALUES (4,'four'); -- 这里能够成功插入，因为 InnoDB 使用的是行级锁。
+   
+   UPDATE test_innodb SET `value` = 'one_update' WHERE `id` = 2;  -- 也是没问题的
+
+  
+   ```
+
+- ### 结果:
+- 在 MyISAM 的测试中，Session B 中的 `INSERT` 会被阻塞，直到 Session A 提交或回滚事务。
+- 在 InnoDB 的测试中，Session B 中的 `INSERT` 能够立即执行并插入记录，因为它锁定的只是正在修改的行。
+
+这些例子展示了 MyISAM 和 InnoDB 在并发环境下的行为差异，选择适当的存储引擎非常重要，这取决于应用的具体需求和使用情境。
 
 
+查看锁表的结果:
+```sh
+show processlist;
++----+------+--------------------+----------+---------+-------+---------------------------------+------------------------------------+
+| Id | User | Host               | db       | Command | Time  | State                           | Info                               |
++----+------+--------------------+----------+---------+-------+---------------------------------+------------------------------------+
+|  5 | root | 10.25.17.211:59211 | firewall | Sleep   | 20676 |                                 | NULL                               |
+|  6 | root | localhost:41456    | firewall | Sleep   | 20895 |                                 | NULL                               |
+|  7 | root | 10.25.17.211:60718 | NULL     | Sleep   | 20558 |                                 | NULL                               |
+|  8 | root | 10.25.17.211:60809 | firewall | Sleep   |    11 |                                 | NULL                               |
+|  9 | root | localhost          | NULL     | Query   |     0 | starting                        | show processlist                   |
+| 10 | root | 10.25.17.211:62953 | firewall | Query   |     5 | Waiting for table metadata lock | INSERT INTO test_myisam VALUES (7) |
+| 11 | root | 10.25.17.211:62954 | firewall | Sleep   |    94 |                                 | NULL                               |
+| 12 | root | 10.25.17.211:63086 | firewall | Sleep   |    94 |                                 | NULL                               |
++----+------+--------------------+----------+---------+-------+---------------------------------+------------------------------------+
+8 rows in set (0.00 sec)
+```
 
 
+```sh
+mysql> show processlist;
++----+------+--------------------+----------+---------+------+----------+--------------------------------------------------------------+
+| Id | User | Host               | db       | Command | Time | State    | Info                                                         |
++----+------+--------------------+----------+---------+------+----------+--------------------------------------------------------------+
+|  2 | root | localhost:43492    | firewall | Sleep   |    1 |          | NULL                                                         |
+|  6 | root | 10.25.17.211:63894 | firewall | Sleep   |  173 |          | NULL                                                         |
+|  7 | root | 10.25.17.211:63895 | firewall | Query   |    2 | updating | UPDATE test_innodb SET `value` = 'one_update' WHERE `id` = 1 |
+|  8 | root | 10.25.17.211:63999 | firewall | Sleep   |  108 |          | NULL                                                         |
+|  9 | root | 10.25.17.211:64000 | firewall | Sleep   |  108 |          | NULL                                                         |
+| 10 | root | localhost          | NULL     | Query   |    0 | starting | show processlist                                             |
++----+------+--------------------+----------+---------+------+----------+--------------------------------------------------------------+
+6 rows in set (0.00 sec)
+```
 
+这个示例确实展示了，尽管 InnoDB 使用行级锁，操作同一行记录会等待，时间长了，会超时。
+> 1205 - Lock wait timeout exceeded; try restarting transaction, Time: 51.024000s    
 
