@@ -367,3 +367,125 @@ mysql> show processlist;
 这个示例确实展示了，尽管 InnoDB 使用行级锁，操作同一行记录会等待，时间长了，会超时。
 > 1205 - Lock wait timeout exceeded; try restarting transaction, Time: 51.024000s    
 
+## 没有磁盘空间
+测试在磁盘没有空间时，mysql存储会有什么问题? 
+
+要快速填充磁盘空间，你可以使用 `dd` 命令。
+
+以下是使用 `dd` 命令快速填充磁盘的方法：
+
+1. 使用 `/dev/zero` 作为输入文件，并使用 `of` 选项指定输出文件：
+
+```bash
+dd if=/dev/zero of=/path/to/outputfile bs=1M count=1024
+```
+
+这会创建一个 1GB 的文件。你可以增加 `count` 的值以创建更大的文件。
+
+2. 如果你想持续地写入文件，直到磁盘满，你可以这样做：
+
+```bash
+dd if=/dev/zero of=/path/to/outputfile bs=1M
+```
+
+没有 `count` 选项，`dd` 会继续写入直到发生错误，通常是因为磁盘已满。
+
+
+mysql 测试程序:
+安装依赖
+- `go get -u gorm.io/gorm`  
+- `go get -u gorm.io/driver/mysql`  
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+const (
+	dsn = "root:Netvine123#@!@tcp(10.25.17.233:3306)/testdb?charset=utf8mb4&parseTime=True&loc=Local"
+)
+
+type User struct {
+	ID   uint   `gorm:"primaryKey"`
+	Name string `gorm:"size:50"`
+}
+
+func setupDB() *gorm.DB {
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		fmt.Errorf("Open%s", err)
+	}
+
+	// Create table
+	if err := db.AutoMigrate(&User{}); err != nil {
+		fmt.Errorf("Open%s", err)
+	}
+
+	return db
+}
+
+func TestGormInsertAndSelect(size int) {
+	db := setupDB()
+
+	for i := 0; i < size; i++ {
+		db.Create(&User{Name: "John" + strconv.Itoa(i)})
+	}
+
+}
+
+func main() {
+	TestGormInsertAndSelect(100_000)
+}
+```
+
+通过`dd`命令已经写满磁盘  
+```sh
+dd if=/dev/zero of=/root/test bs=1M
+dd: error writing 'test': No space left on device
+85777+0 records in
+85776+0 records out
+89942695936 bytes (90 GB, 84 GiB) copied, 776.217 s, 116 MB/s
+```
+
+mysql错误日志
+```sh
+2023-10-28T04:12:49.171696Z 271 [ERROR] InnoDB: posix_fallocate(): Failed to preallocate data for file ./testdb/users.ibd, desired size 32768 bytes. Operating system error number 28. Check that the disk is not full or a disk quota exceeded. Make sure the file system supports this function. Some operating system error numbers are described at http://dev.mysql.com/doc/refman/5.7/en/operating-sys
+```
+
+sql语句报错
+```sh
+2023/10/28 12:14:09 main.go:37 Error 1114 (HY000): The table 'users' is full
+[14.766ms] [rows:0] INSERT INTO `users` (`name`) VALUES ('John4899')
+
+2023/10/28 12:14:09 main.go:37 Error 1114 (HY000): The table 'users' is full
+[14.967ms] [rows:0] INSERT INTO `users` (`name`) VALUES ('John4900')
+
+2023/10/28 12:14:09 main.go:37 Error 1114 (HY000): The table 'users' is full
+[14.047ms] [rows:0] INSERT INTO `users` (`name`) VALUES ('John4901')
+```
+
+
+
+redis也已经无法新增,但是可以读取数据
+```sh
+ set ddd bbb
+(error) MISCONF Redis is configured to save RDB snapshots, but it is currently not able to persist on disk. Commands that may modify the data set are disabled, because this instance is configured to report errors during writes if RDB snapshotting fails (stop-writes-on-bgsave-error option). Please check the Redis logs for details about the RDB error.
+```
+
+redis-server日志
+```sh
+220513:M 28 Oct 2023 12:26:42.012 * 1 changes in 900 seconds. Saving...
+220513:M 28 Oct 2023 12:26:42.014 * Background saving started by pid 223374
+223374:C 28 Oct 2023 12:26:42.015 # Write error saving DB on disk: No space left on device
+220513:M 28 Oct 2023 12:26:42.115 # Background saving error
+```
+
+磁盘空间满时，redis ping失败
+```sh
+127.0.0.1:6379> ping
+(error) MISCONF Redis is configured to save RDB snapshots, but it is currently not able to persist on disk. Commands that may modify the data set are disabled, because this instance is configured to report errors during writes if RDB snapshotting fails (stop-writes-on-bgsave-error option). Please check the Redis logs for details about the RDB error.
+```

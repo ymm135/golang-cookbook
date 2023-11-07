@@ -3,6 +3,24 @@
 ### [在线redis](https://try.redis.io/)  
 ### [所有指令](https://redis.io/commands)  
 
+- ## 目录
+- [redis基础](#redis基础)
+  - [官网](#官网)
+    - [在线redis](#在线redis)
+    - [所有指令](#所有指令)
+  - [docker 安装](#docker-安装)
+  - [容器](#容器)
+    - [基本操作](#基本操作)
+    - [keys](#keys)
+    - [list](#list)
+    - [hash](#hash)
+    - [sets](#sets)
+  - [pipeline](#pipeline)
+  - [Redis Pub/Sub](#redis-pubsub)
+  - [Using Redis as an LRU cache](#using-redis-as-an-lru-cache)
+  - [过期键删除策略](#过期键删除策略)
+
+
 ## docker 安装
 
 ```shell
@@ -12,6 +30,69 @@ docker run -p 6379:6379 --name redis -d redis:5.0 --requirepass 'redis'
 ```
 
 ## 容器
+### 基本操作
+```sh
+# 查看数据类型
+> type cpu_used:17:15:17
+string
+
+# 测试与服务器的连接
+> ping
+PONG
+
+# 选择数据库
+> SELECT 1
+OK
+
+# 清空当前数据库中的所有数据
+> FLUSHDB
+OK
+
+# 清空所有数据库中的数据
+> FLUSHALL
+OK
+```
+
+### keys
+
+`KEYS` 命令用于查找所有符合给定模式的键。Redis 使用以下的一些模式匹配运算符：
+
+- `*` ：匹配所有键。
+- `?` ：匹配任意一个字符。
+- `[]` ：匹配括号内的任意一个字符。
+- `[a-z]` ：匹配 a 到 z 之间的任意一个字符。
+
+下面是一些示例：
+
+1. **查找所有键**：
+   ```
+   > KEYS *
+   ```
+
+2. **查找以 `user` 开头的所有键**：
+   ```
+   > KEYS user*
+   ```
+
+3. **查找以 `user` 开头，接着是任意一个字符，然后以 `data` 结尾的所有键**：
+   ```
+   > KEYS user?data
+   ```
+
+4. **查找以 `user` 开头，接着是数字（0-9）的所有键**：
+   ```
+   > KEYS user[0-9]*
+   ```
+
+5. **查找以 `a` 或 `b` 开头的所有键**：
+   ```
+   > KEYS [ab]*
+   ```
+
+请注意，`KEYS` 命令在生产环境中应当谨慎使用，特别是当 Redis 实例中有大量的键时。这是因为 `KEYS` 是一个阻塞性命令，可能会对性能产生影响。为了避免这种情况，在生产环境中，你应该考虑使用 `SCAN` 命令进行迭代操作。
+
+
+
 ### [list](https://redis.io/commands#list)  
 ```shell
 127.0.0.1:6379> LPUSH mylist "world"

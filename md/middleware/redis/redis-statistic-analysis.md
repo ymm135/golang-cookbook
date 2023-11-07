@@ -10,9 +10,9 @@
 3. 排序统计；
 4. 基数统计。  
 
-本文将用到 String、Set、Zset、List、hash 以外的拓展数据类型 Bitmap、HyperLogLog来实现。  
+将用到 String、Set、Zset、List、hash 以外的拓展数据类型 Bitmap、HyperLogLog来实现。  
 
-今天我们来看下剩下的三种统计类型。
+来看下剩下的三种统计类型。
 
 文章涉及到的指令可以通过在线 Redis 客户端运行调试，地址：https://try.redis.io/，超方便的说。  
 
@@ -73,7 +73,7 @@
 3) "hong:id7"
 ```  
 
-### HyperLogLog 方案  
+### `HyperLogLog` 方案  
 
 利用  Redis 提供的 HyperLogLog 高级数据结构（不要只知道 Redis 的五种基础数据类型了）。这是一种用于基数统计的数据集合类型，即使数据量很大，计算基数需要的空间也是固定的。
 
