@@ -143,7 +143,63 @@ netconsole      0:off   1:off   2:off   3:off   4:off   5:off   6:off
 
 
 ## mysql启动异常  
+文件大小:
+```sh
+total 185M
+drwxr-xr-x 2 root  root  4.0K Nov  7 16:02 ./
+drwx------ 5 root  root  4.0K Nov  7 16:01 ../
+-rw-r----- 1 mysql mysql  76M Nov  7 15:59 ibdata1
+-rw-r----- 1 mysql mysql  48M Nov  7 15:59 ib_logfile0
+-rw-r----- 1 mysql mysql  48M Jun  2 10:39 ib_logfile1
+-rw-r----- 1 mysql mysql  12M Nov  7 15:57 ibtmp1
+```
 
+正常启动日志:
+```sh
+2023-11-07T08:08:25.231295Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2023-11-07T08:08:25.231420Z 0 [Warning] Insecure configuration for --secure-file-priv: Current value does not restrict location of generated files. Consider setting it to a valid, non-empty path.
+2023-11-07T08:08:25.231436Z 0 [Note] /usr/sbin/mysqld (mysqld 5.7.37) starting as process 9580 ...
+2023-11-07T08:08:25.235266Z 0 [Note] InnoDB: PUNCH HOLE support available
+2023-11-07T08:08:25.235298Z 0 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2023-11-07T08:08:25.235305Z 0 [Note] InnoDB: Uses event mutexes
+2023-11-07T08:08:25.235308Z 0 [Note] InnoDB: GCC builtin __atomic_thread_fence() is used for memory barrier
+2023-11-07T08:08:25.235310Z 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2023-11-07T08:08:25.235316Z 0 [Note] InnoDB: Using Linux native AIO
+2023-11-07T08:08:25.235465Z 0 [Note] InnoDB: Number of pools: 1
+2023-11-07T08:08:25.235578Z 0 [Note] InnoDB: Using CPU crc32 instructions
+2023-11-07T08:08:25.237727Z 0 [Note] InnoDB: Initializing buffer pool, total size = 128M, instances = 1, chunk size = 128M
+2023-11-07T08:08:25.242858Z 0 [Note] InnoDB: Completed initialization of buffer pool
+2023-11-07T08:08:25.244473Z 0 [Note] InnoDB: If the mysqld execution user is authorized, page cleaner thread priority can be changed. See the man page of setpriority().
+2023-11-07T08:08:25.255753Z 0 [Note] InnoDB: Highest supported file format is Barracuda.
+2023-11-07T08:08:25.256701Z 0 [Note] InnoDB: The log sequence number 20792063 in the system tablespace does not match the log sequence number 20801136 in the ib_logfiles!
+2023-11-07T08:08:25.256725Z 0 [Note] InnoDB: Database was not shutdown normally!
+2023-11-07T08:08:25.256731Z 0 [Note] InnoDB: Starting crash recovery.
+2023-11-07T08:08:25.366560Z 0 [Note] InnoDB: Removed temporary tablespace data file: "ibtmp1"
+2023-11-07T08:08:25.366598Z 0 [Note] InnoDB: Creating shared tablespace for temporary tables
+2023-11-07T08:08:25.366638Z 0 [Note] InnoDB: Setting file './ibtmp1' size to 12 MB. Physically writing the file full; Please wait ...
+2023-11-07T08:08:25.375966Z 0 [Note] InnoDB: File './ibtmp1' size is now 12 MB.
+2023-11-07T08:08:25.376488Z 0 [Note] InnoDB: 96 redo rollback segment(s) found. 96 redo rollback segment(s) are active.
+2023-11-07T08:08:25.376511Z 0 [Note] InnoDB: 32 non-redo rollback segment(s) are active.
+2023-11-07T08:08:25.376756Z 0 [Note] InnoDB: Waiting for purge to start
+2023-11-07T08:08:25.426965Z 0 [Note] InnoDB: 5.7.37 started; log sequence number 20801136
+2023-11-07T08:08:25.427267Z 0 [Note] InnoDB: Loading buffer pool(s) from /var/lib/mysql/ib_buffer_pool
+2023-11-07T08:08:25.427286Z 0 [Note] Plugin 'FEDERATED' is disabled.
+2023-11-07T08:08:25.430563Z 0 [Note] InnoDB: Buffer pool(s) load completed at 231107 16:08:25
+2023-11-07T08:08:25.434451Z 0 [Note] Found ca.pem, server-cert.pem and server-key.pem in data directory. Trying to enable SSL support using them.
+2023-11-07T08:08:25.434483Z 0 [Note] Skipping generation of SSL certificates as certificate files are present in data directory.
+2023-11-07T08:08:25.434490Z 0 [Warning] A deprecated TLS version TLSv1 is enabled. Please use TLSv1.2 or higher.
+2023-11-07T08:08:25.434492Z 0 [Warning] A deprecated TLS version TLSv1.1 is enabled. Please use TLSv1.2 or higher.
+2023-11-07T08:08:25.434892Z 0 [Warning] CA certificate ca.pem is self signed.
+2023-11-07T08:08:25.434931Z 0 [Note] Skipping generation of RSA key pair as key files are present in data directory.
+2023-11-07T08:08:25.435333Z 0 [Note] Server hostname (bind-address): '127.0.0.1'; port: 3306
+2023-11-07T08:08:25.435358Z 0 [Note]   - '127.0.0.1' resolves to '127.0.0.1';
+2023-11-07T08:08:25.435443Z 0 [Note] Server socket created on IP: '127.0.0.1'.
+2023-11-07T08:08:25.456391Z 0 [Note] Event Scheduler: Loaded 0 events
+2023-11-07T08:08:25.456977Z 0 [Note] /usr/sbin/mysqld: ready for connections.
+Version: '5.7.37'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)
+```
+
+异常启动日志:
 ```sh
 2023-09-13T07:44:50.032335Z 0 [Warning] Changed limits: max_open_files: 5000 (requested 10240)
 2023-09-13T07:44:50.032759Z 0 [Warning] Changed limits: table_open_cache: 1471 (requested 2000)
@@ -222,6 +278,398 @@ Trying to get some variables.
 Some pointers may be invalid and cause the dump to abort.
 Query (0): Connection ID (thread ID): 0
 Status: NOT_KILLED
+```
+
+四个文件的作用:
+MySQL中的这四个文件是InnoDB存储引擎的关键组件，每个文件都有其特定的作用：
+
+1. **`ibdata1`**：
+   - 这是InnoDB的主要数据文件，被称为系统表空间文件。
+   - 它包含了表的数据、索引、撤销日志（undo logs）、插入缓冲区（insert buffer）、双写缓冲区（doublewrite buffer）等。
+   - `ibdata1`对InnoDB的操作至关重要，因为它存储了表结构信息以及一些重要的数据。
+
+2. **`ib_logfile0` 和 `ib_logfile1`**：
+   - 这两个文件是InnoDB的重做日志文件（Redo log files），用于实现事务的持久性。
+   - 在发生故障时，重做日志文件被用来恢复未提交的事务写入的数据。
+   - 一般来说，这两个文件是循环使用的，当一个文件写满后，InnoDB会继续写入另一个文件。
+
+3. **`ibtmp1`**：
+   - 这是InnoDB的临时表空间文件。
+   - 它主要用于存储临时表和临时索引。
+   - 这个文件在MySQL重启时会被重置，其中的数据不会持久化。
+
+这些文件对于InnoDB的正常操作至关重要，任何对这些文件的损坏或误删除都可能导致严重的数据问题。因此，对这些文件的操作应该非常小心谨慎，同时确保定期备份数据库。  
+
+### `ibdata1` 损坏 
+先修改`ibdata1`,`dd if=/dev/random of=ibdata1 bs=1 count=1024 seek=512`  
+```sh
+# 修改前
+-rw-r-----  1 mysql mysql  76M Nov  7 15:59 ibdata1
+
+# 修改后
+-rw-r-----  1 mysql mysql  524 Nov  7 16:12 ibdata1
+```
+
+启动日志
+```sh
+2023-11-07T08:15:05.903305Z 0 [Note] /usr/sbin/mysqld (mysqld 5.7.37) starting as process 10188 ...
+2023-11-07T08:15:05.908023Z 0 [Note] InnoDB: PUNCH HOLE support available
+2023-11-07T08:15:05.908056Z 0 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2023-11-07T08:15:05.908062Z 0 [Note] InnoDB: Uses event mutexes
+2023-11-07T08:15:05.908065Z 0 [Note] InnoDB: GCC builtin __atomic_thread_fence() is used for memory barrier
+2023-11-07T08:15:05.908068Z 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2023-11-07T08:15:05.908071Z 0 [Note] InnoDB: Using Linux native AIO
+2023-11-07T08:15:05.908361Z 0 [Note] InnoDB: Number of pools: 1
+2023-11-07T08:15:05.908596Z 0 [Note] InnoDB: Using CPU crc32 instructions
+2023-11-07T08:15:05.911368Z 0 [Note] InnoDB: Initializing buffer pool, total size = 128M, instances = 1, chunk size = 128M
+2023-11-07T08:15:05.917554Z 0 [Note] InnoDB: Completed initialization of buffer pool
+2023-11-07T08:15:05.919424Z 0 [Note] InnoDB: If the mysqld execution user is authorized, page cleaner thread priority can be changed. See the man page of setpriority().
+2023-11-07T08:15:05.929550Z 0 [ERROR] InnoDB: The Auto-extending innodb_system data file './ibdata1' is of a different size 0 pages (rounded down to MB) than specified in the .cnf file: initial 768 pages, max 0 (relevant if non-zero) pages!
+2023-11-07T08:15:05.929590Z 0 [ERROR] InnoDB: Plugin initialization aborted with error Generic error
+2023-11-07T08:15:06.530259Z 0 [ERROR] Plugin 'InnoDB' init function returned error.
+2023-11-07T08:15:06.530297Z 0 [ERROR] Plugin 'InnoDB' registration as a STORAGE ENGINE failed.
+2023-11-07T08:15:06.530331Z 0 [ERROR] Failed to initialize builtin plugins.
+2023-11-07T08:15:06.530334Z 0 [ERROR] Aborting
+
+2023-11-07T08:15:06.530364Z 0 [Note] Binlog end
+2023-11-07T08:15:06.530529Z 0 [Note] Shutting down plugin 'CSV'
+2023-11-07T08:15:06.530760Z 0 [Note] /usr/sbin/mysqld: Shutdown complete
+
+2023-11-07T08:15:07.138169Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2023-11-07T08:15:07.138295Z 0 [Warning] Insecure configuration for --secure-file-priv: Current value does not restrict location of generated files. Consider setting it to a valid, non-empty path.
+2023-11-07T08:15:07.138313Z 0 [Note] /usr/sbin/mysqld (mysqld 5.7.37) starting as process 10243 ...
+2023-11-07T08:15:07.142175Z 0 [Note] InnoDB: PUNCH HOLE support available
+2023-11-07T08:15:07.142924Z 0 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2023-11-07T08:15:07.143006Z 0 [Note] InnoDB: Uses event mutexes
+2023-11-07T08:15:07.143031Z 0 [Note] InnoDB: GCC builtin __atomic_thread_fence() is used for memory barrier
+2023-11-07T08:15:07.143345Z 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2023-11-07T08:15:07.143442Z 0 [Note] InnoDB: Using Linux native AIO
+2023-11-07T08:15:07.143795Z 0 [Note] InnoDB: Number of pools: 1
+2023-11-07T08:15:07.144013Z 0 [Note] InnoDB: Using CPU crc32 instructions
+2023-11-07T08:15:07.146034Z 0 [Note] InnoDB: Initializing buffer pool, total size = 128M, instances = 1, chunk size = 128M
+2023-11-07T08:15:07.152294Z 0 [Note] InnoDB: Completed initialization of buffer pool
+2023-11-07T08:15:07.154215Z 0 [Note] InnoDB: If the mysqld execution user is authorized, page cleaner thread priority can be changed. See the man page of setpriority().
+2023-11-07T08:15:07.164431Z 0 [ERROR] InnoDB: The Auto-extending innodb_system data file './ibdata1' is of a different size 0 pages (rounded down to MB) than specified in the .cnf file: initial 768 pages, max 0 (relevant if non-zero) pages!
+2023-11-07T08:15:07.164500Z 0 [ERROR] InnoDB: Plugin initialization aborted with error Generic error
+2023-11-07T08:15:07.765083Z 0 [ERROR] Plugin 'InnoDB' init function returned error.
+2023-11-07T08:15:07.765123Z 0 [ERROR] Plugin 'InnoDB' registration as a STORAGE ENGINE failed.
+2023-11-07T08:15:07.765132Z 0 [ERROR] Failed to initialize builtin plugins.
+2023-11-07T08:15:07.765135Z 0 [ERROR] Aborting
+
+2023-11-07T08:15:07.765160Z 0 [Note] Binlog end
+2023-11-07T08:15:07.765951Z 0 [Note] Shutting down plugin 'CSV'
+2023-11-07T08:15:07.766509Z 0 [Note] /usr/sbin/mysqld: Shutdown complete
+```
+
+### `ib_logfile0`文件损坏
+`dd if=/dev/random of=ib_logfile0 bs=1 count=1024 seek=512`  
+
+```sh
+2023-11-07T08:22:56.693652Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2023-11-07T08:22:56.693776Z 0 [Warning] Insecure configuration for --secure-file-priv: Current value does not restrict location of generated files. Consider setting it to a valid, non-empty path.
+2023-11-07T08:22:56.693797Z 0 [Note] /usr/sbin/mysqld (mysqld 5.7.37) starting as process 11038 ...
+2023-11-07T08:22:56.699209Z 0 [Note] InnoDB: PUNCH HOLE support available
+2023-11-07T08:22:56.699313Z 0 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2023-11-07T08:22:56.699350Z 0 [Note] InnoDB: Uses event mutexes
+2023-11-07T08:22:56.699367Z 0 [Note] InnoDB: GCC builtin __atomic_thread_fence() is used for memory barrier
+2023-11-07T08:22:56.699378Z 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2023-11-07T08:22:56.699458Z 0 [Note] InnoDB: Using Linux native AIO
+2023-11-07T08:22:56.699748Z 0 [Note] InnoDB: Number of pools: 1
+2023-11-07T08:22:56.699956Z 0 [Note] InnoDB: Using CPU crc32 instructions
+2023-11-07T08:22:56.703446Z 0 [Note] InnoDB: Initializing buffer pool, total size = 128M, instances = 1, chunk size = 128M
+2023-11-07T08:22:56.709030Z 0 [Note] InnoDB: Completed initialization of buffer pool
+2023-11-07T08:22:56.710653Z 0 [Note] InnoDB: If the mysqld execution user is authorized, page cleaner thread priority can be changed. See the man page of setpriority().
+2023-11-07T08:22:56.721768Z 0 [ERROR] InnoDB: Log file ./ib_logfile0 size 2048 is not a multiple of innodb_page_size
+2023-11-07T08:22:56.721851Z 0 [ERROR] InnoDB: Plugin initialization aborted with error Generic error
+2023-11-07T08:22:57.324301Z 0 [ERROR] Plugin 'InnoDB' init function returned error.
+2023-11-07T08:22:57.324400Z 0 [ERROR] Plugin 'InnoDB' registration as a STORAGE ENGINE failed.
+2023-11-07T08:22:57.324425Z 0 [ERROR] Failed to initialize builtin plugins.
+2023-11-07T08:22:57.324442Z 0 [ERROR] Aborting
+
+2023-11-07T08:22:57.324478Z 0 [Note] Binlog end
+2023-11-07T08:22:57.325134Z 0 [Note] Shutting down plugin 'CSV'
+2023-11-07T08:22:57.325364Z 0 [Note] /usr/sbin/mysqld: Shutdown complete
+```
+
+### `ibtmp1`文件损坏  
+`dd if=/dev/random of=ibtmp1 bs=1 count=1024 seek=512`  
+
+正常启动，临时表的空间会重新生成并占用  
+
+### 三个文件都损坏和删除  
+
+修改三个文件的日志
+```sh
+23-11-07T08:27:44.451807Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2023-11-07T08:27:44.451930Z 0 [Warning] Insecure configuration for --secure-file-priv: Current value does not restrict location of generated files. Consider setting it to a valid, non-empty path.
+2023-11-07T08:27:44.451948Z 0 [Note] /usr/sbin/mysqld (mysqld 5.7.37) starting as process 11765 ...
+2023-11-07T08:27:44.455790Z 0 [Note] InnoDB: PUNCH HOLE support available
+2023-11-07T08:27:44.455896Z 0 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2023-11-07T08:27:44.456061Z 0 [Note] InnoDB: Uses event mutexes
+2023-11-07T08:27:44.456144Z 0 [Note] InnoDB: GCC builtin __atomic_thread_fence() is used for memory barrier
+2023-11-07T08:27:44.456224Z 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2023-11-07T08:27:44.456330Z 0 [Note] InnoDB: Using Linux native AIO
+2023-11-07T08:27:44.456559Z 0 [Note] InnoDB: Number of pools: 1
+2023-11-07T08:27:44.456718Z 0 [Note] InnoDB: Using CPU crc32 instructions
+2023-11-07T08:27:44.458211Z 0 [Note] InnoDB: Initializing buffer pool, total size = 128M, instances = 1, chunk size = 128M
+2023-11-07T08:27:44.463610Z 0 [Note] InnoDB: Completed initialization of buffer pool
+2023-11-07T08:27:44.465233Z 0 [Note] InnoDB: If the mysqld execution user is authorized, page cleaner thread priority can be changed. See the man page of setpriority().
+2023-11-07T08:27:44.475561Z 0 [ERROR] InnoDB: The Auto-extending innodb_system data file './ibdata1' is of a different size 0 pages (rounded down to MB) than specified in the .cnf file: initial 768 pages, max 0 (relevant if non-zero) pages!
+2023-11-07T08:27:44.475925Z 0 [ERROR] InnoDB: Plugin initialization aborted with error Generic error
+2023-11-07T08:27:45.076814Z 0 [ERROR] Plugin 'InnoDB' init function returned error.
+2023-11-07T08:27:45.076986Z 0 [ERROR] Plugin 'InnoDB' registration as a STORAGE ENGINE failed.
+2023-11-07T08:27:45.077072Z 0 [ERROR] Failed to initialize builtin plugins.
+2023-11-07T08:27:45.077122Z 0 [ERROR] Aborting
+
+2023-11-07T08:27:45.077207Z 0 [Note] Binlog end
+2023-11-07T08:27:45.077839Z 0 [Note] Shutting down plugin 'CSV'
+2023-11-07T08:27:45.078093Z 0 [Note] /usr/sbin/mysqld: Shutdown complete
+```
+
+删除三个文件的日志
+```sh
+2023-11-07T08:28:49.342599Z 0 [Warning] Gtid table is not ready to be used. Table 'mysql.gtid_executed' cannot be opened.
+2023-11-07T08:28:49.344360Z 0 [Note] Found ca.pem, server-cert.pem and server-key.pem in data directory. Trying to enable SSL support using them.
+2023-11-07T08:28:49.344441Z 0 [Note] Skipping generation of SSL certificates as certificate files are present in data directory.
+2023-11-07T08:28:49.344451Z 0 [Warning] A deprecated TLS version TLSv1 is enabled. Please use TLSv1.2 or higher.
+2023-11-07T08:28:49.344454Z 0 [Warning] A deprecated TLS version TLSv1.1 is enabled. Please use TLSv1.2 or higher.
+2023-11-07T08:28:49.345469Z 0 [Warning] CA certificate ca.pem is self signed.
+2023-11-07T08:28:49.345516Z 0 [Note] Skipping generation of RSA key pair as key files are present in data directory.
+2023-11-07T08:28:49.346250Z 0 [Note] Server hostname (bind-address): '127.0.0.1'; port: 3306
+2023-11-07T08:28:49.346281Z 0 [Note]   - '127.0.0.1' resolves to '127.0.0.1';
+2023-11-07T08:28:49.346440Z 0 [Note] Server socket created on IP: '127.0.0.1'.
+2023-11-07T08:28:49.346794Z 0 [Warning] InnoDB: Cannot open table mysql/server_cost from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:28:49.346819Z 0 [Warning] Failed to open optimizer cost constant tables
+
+2023-11-07T08:28:49.347679Z 0 [Warning] InnoDB: Cannot open table mysql/time_zone_leap_second from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:28:49.347981Z 0 [Warning] Can't open and lock time zone table: Table 'mysql.time_zone_leap_second' doesn't exist trying to live without them
+2023-11-07T08:28:49.348571Z 0 [Warning] InnoDB: Cannot open table mysql/servers from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:28:49.348611Z 0 [ERROR] Can't open and lock privilege tables: Table 'mysql.servers' doesn't exist
+2023-11-07T08:28:49.354285Z 0 [Note] Event Scheduler: Loaded 0 events
+2023-11-07T08:28:49.354430Z 0 [Note] /usr/sbin/mysqld: ready for connections.
+Version: '5.7.37'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)
+```
+
+
+### `innodb_force_recovery = 2`  
+innodb_force_recovery = 2 ，mysql就可以正常启动了  
+
+但是应用程序无法使用mysql
+```sh
+update equip status error:Error 1881: Operation not allowed when innodb_forced_recovery > 0.
+```
+
+`innodb_force_recovery` 是一个MySQL配置选项，用于在InnoDB存储引擎无法正常启动时进行紧急恢复。设置这个选项可以强制InnoDB在损坏或不一致的状态下启动，以便于进行数据恢复或转移。`innodb_force_recovery`的设置值从1到6不等，每个级别代表不同的恢复操作：
+
+1. **值 1 (SRV_FORCE_IGNORE_CORRUPT)**：
+   - 强制InnoDB忽略表空间中的某些检测到的数据错误。
+   - 仅用于尝试读取损坏表的数据。
+
+2. **值 2 (SRV_FORCE_NO_BACKGROUND)**：
+   - 阻止InnoDB启动后台线程，如主线程（负责脏页清洗、合并插入缓冲区等）。
+   - 有助于防止可能引起进一步损坏的背景活动。
+
+3. **值 3 (SRV_FORCE_NO_TRX_UNDO)**：
+   - 禁止事务回滚。
+   - 这在数据库损坏时可能有助于读取数据。
+
+4. **值 4 (SRV_FORCE_NO_IBUF_MERGE)**：
+   - 阻止插入缓冲区合并操作。
+   - 插入缓冲区用于优化二级索引的更新，禁用这一点可以避免潜在的错误。
+
+5. **值 5 (SRV_FORCE_NO_UNDO_LOG_SCAN)**：
+   - 不执行撤销日志的扫描。
+   - 这将阻止InnoDB尝试恢复未完成的事务。
+
+6. **值 6 (SRV_FORCE_NO_LOG_REDO)**：
+   - 禁用重做日志应用。
+   - 这可以防止在恢复过程中应用可能损坏的日志记录。
+
+使用`innodb_force_recovery`时需谨慎，因为高级别的设置可能导致数据丢失或进一步损坏。一般建议从较低的级别开始尝试，并逐步增加级别直到可以启动MySQL。启动后，应尽快转移或备份重要数据，并尽可能避免对数据库进行写操作。在恢复操作完成后，务必将此选项值重置为0，以恢复正常的数据库操作。
+
+正常启动后的告警:
+```sh
+2023-11-07T08:44:20.739880Z 3 [Warning] InnoDB: Cannot open table smp/tables from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:44:20.739997Z 3 [Warning] InnoDB: Cannot open table smp/tb_demo from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:44:20.740095Z 3 [Warning] InnoDB: Cannot open table smp/test_init from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:44:20.740190Z 3 [Warning] InnoDB: Cannot open table smp/test_table from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:44:20.742285Z 3 [Warning] InnoDB: Cannot open table smp/   from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:44:20.747023Z 3 [Warning] InnoDB: Cannot open table smp/usb_system_setting from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:44:20.747132Z 3 [Warning] InnoDB: Cannot open table smp/usb_white_list from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:47:47.076119Z 3 [Warning] InnoDB: Cannot open table smp/tables from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:47:47.076172Z 3 [Warning] InnoDB: Cannot open table smp/tb_demo from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:47:47.076198Z 3 [Warning] InnoDB: Cannot open table smp/test_init from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-07T08:47:47.076224Z 3 [Warning] InnoDB: Cannot open table smp/test_table from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+```
+
+通过`show tables`能够查看到表名，但是`check`与`select`都提示表不存在  
+```sh
+mysql> check table usb_black_list;
++--------------------+-------+----------+------------------------------------------+
+| Table              | Op    | Msg_type | Msg_text                                 |
++--------------------+-------+----------+------------------------------------------+
+| smp.usb_black_list | check | Error    | Table 'smp.usb_black_list' doesn't exist |
+| smp.usb_black_list | check | status   | Operation failed                         |
++--------------------+-------+----------+------------------------------------------+
+```
+
+删除这些表的文件也无法正常启动.  
+
+启动日志
+```sh
+2023-11-07T09:25:13.694856Z 0 [Note] InnoDB: File './ibtmp1' size is now 12 MB.
+2023-11-07T09:25:13.696822Z 0 [Note] InnoDB: 96 redo rollback segment(s) found. 96 redo rollback segment(s) are active.
+2023-11-07T09:25:13.696857Z 0 [Note] InnoDB: 32 non-redo rollback segment(s) are active.
+2023-11-07T09:25:13.697507Z 0 [Note] InnoDB: 5.7.39 started; log sequence number 20541218524
+2023-11-07T09:25:13.697545Z 0 [Note] InnoDB: !!! innodb_force_recovery is set to 2 !!!
+2023-11-07T09:25:13.697743Z 0 [Note] InnoDB: Loading buffer pool(s) from /data/mysql/data/ib_buffer_pool
+2023-11-07T09:25:13.698458Z 0 [Note] Plugin 'FEDERATED' is disabled.
+2023-11-07T09:25:13.701445Z 0 [Note] InnoDB: Buffer pool(s) load completed at 231107 17:25:13
+2023-11-07T09:25:13.712200Z 0 [Note] Found ca.pem, server-cert.pem and server-key.pem in data directory. Trying to enable SSL support using them.
+2023-11-07T09:25:13.712245Z 0 [Note] Skipping generation of SSL certificates as certificate files are present in data directory.
+2023-11-07T09:25:13.712258Z 0 [Warning] A deprecated TLS version TLSv1 is enabled. Please use TLSv1.2 or higher.
+2023-11-07T09:25:13.712266Z 0 [Warning] A deprecated TLS version TLSv1.1 is enabled. Please use TLSv1.2 or higher.
+2023-11-07T09:25:13.714395Z 0 [Warning] CA certificate ca.pem is self signed.
+2023-11-07T09:25:13.714542Z 0 [Note] Skipping generation of RSA key pair as key files are present in data directory.
+2023-11-07T09:25:13.715722Z 0 [Note] Server hostname (bind-address): '*'; port: 3306
+```
+
+查看引擎状态:
+```sh
+mysql> show engines;
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |
+| BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |
+| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
+| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+9 rows in set (0.00 sec)
+```
+
+正常的引擎状态:
+```sh
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |
+| BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |
+| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
+| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+9 rows in set (0.00 sec)
+```
+
+网上给的修改方案为`删除重建`:  
+```sh
+根据查到的方法，我的修复步骤如下：
+
+因为我无法启动mysql，所以首先要想办法启动mysql，然后dump数据。从innodb_force_recovery的值1开始尝试，看mysql能否在该修复模式下启动，不到万不得已，不要尝试值为4及以上。
+在我这里，mysql在值为2时可以启动，这是stop掉数据库，然后备份数据
+sudo service mysql stop
+mysqldump -u root -p --all-databases > all-databases.sql
+
+删除掉出错的数据文件
+mv ib_logfile0 ib_logfile0.bak
+mv ib_logfile1 ib_logfile1.bak
+mv ibdata1 ibdata1.bak
+
+启动mysql，然后从备份文件恢复数据
+sudo service mysql start
+mysql -u root -p < all-databases.sql
+
+因为在修复模式下，在插入数据时报错，也就是说此时是不能写入数据的。所以就关闭掉了修复模式
+[mysqld]
+innodb_force_recovery = 0
+
+restart mysql后，再次恢复数据
+
+sudo service mysql restart
+mysql -u root -p < all-databases.sql
+
+再次重启下mysql，现在mysql可以正常启动了，并且数据也恢复成功。
+```
+
+数据量也不是很大,最大的表应该有200万的数据。  
+```sh
+505M    log_1.MYD
+432K    sys_casbin_rule.ibd
+240K    sys_api.ibd
+224K    t_apps_data_source_init_sql.ibd
+208K    t_func_list.ibd
+176K    sys_menu.ibd
+160K    t_app_auth_child.ibd
+160K    sys_user.ibd
+160K    sys_report_file.ibd
+160K    sys_opera_log.ibd
+160K    report_file.ibd
+157M    log_1.MYI
+148M    event_warn_detail.ibd
+```
+
+```sh
+ll -lh tables.* tb_demo* test_init* test_table* usb_black_list* usb_white_list* tb_demo* test_init* 
+-rw-r-----. 1 mysql mysql 8.5K Aug 21  2022 tables.frm
+-rw-r-----. 1 mysql mysql  96K Aug 21  2022 tables.ibd
+-rw-r-----. 1 mysql mysql 8.7K Aug 21  2022 tb_demo.frm
+-rw-r-----. 1 mysql mysql 8.7K Aug 21  2022 tb_demo.frm
+-rw-r-----. 1 mysql mysql 144K Aug 21  2022 tb_demo.ibd
+-rw-r-----. 1 mysql mysql 144K Aug 21  2022 tb_demo.ibd
+-rw-r-----. 1 mysql mysql 8.4K Aug 21  2022 test_init.frm
+-rw-r-----. 1 mysql mysql 8.4K Aug 21  2022 test_init.frm
+-rw-r-----. 1 mysql mysql  96K Aug 21  2022 test_init.ibd
+-rw-r-----. 1 mysql mysql  96K Aug 21  2022 test_init.ibd
+-rw-r-----. 1 mysql mysql 8.4K Aug 21  2022 test_table.frm
+-rw-r-----. 1 mysql mysql  96K Aug 21  2022 test_table.ibd
+-rw-r-----. 1 mysql mysql 8.7K Sep 22  2022 usb_black_list.frm
+-rw-r-----. 1 mysql mysql 112K Sep 22  2022 usb_black_list.ibd
+-rw-r-----. 1 mysql mysql 8.7K Sep 22  2022 usb_white_list.frm
+-rw-r-----. 1 mysql mysql 112K Sep 22  2022 usb_white_list.ibd
+```
+
+```sh
+du -sh mysql/
+1.1G    mysql/
+```
+
+查看所有历史日志，发现崩溃前有几个问题:
+```sh
+
+
+2023-11-02T12:07:56.241644Z 20 [Warning] InnoDB: Cannot open table smp/test_table from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-02T12:07:56.241712Z 20 [Warning] InnoDB: Cannot open table smp/usb_black_list from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-02T12:07:56.241888Z 20 [Warning] InnoDB: Cannot open table smp/usb_system_setting from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+2023-11-02T12:07:56.241908Z 20 [Warning] InnoDB: Cannot open table smp/usb_white_list from the internal data dictionary of InnoDB though the .frm file for the table exists. Please refer to http://dev.mysql.com/doc/refman/5.7/en/innodb-troubleshooting.html for how to resolve the issue.
+
+
+2023-11-03T06:11:39.043587Z 0 [Warning] A deprecated TLS version TLSv1 is enabled. Please use TLSv1.2 or higher.
+2023-11-03T06:11:39.043590Z 0 [Warning] A deprecated TLS version TLSv1.1 is enabled. Please use TLSv1.2 or higher.
+2023-11-03T06:11:39.053293Z 0 [Warning] CA certificate ca.pem is self signed.
+2023-11-03T06:11:39.062239Z 0 [Note] Skipping generation of RSA key pair as key files are present in data directory.
+2023-11-03T06:11:39.062700Z 0 [Note] Server hostname (bind-address): '*'; port: 3306
+2023-11-03T06:11:39.062735Z 0 [Note] IPv6 is available.
+2023-11-03T06:11:39.062743Z 0 [Note]   - '::' resolves to '::';
+2023-11-03T06:11:39.062762Z 0 [Note] Server socket created on IP: '::'.
+2023-11-03T06:11:39.175439Z 0 [Note] Event Scheduler: Loaded 0 events
+2023-11-03T06:11:39.182017Z 0 [Note] /usr/sbin/mysqld: ready for connections.
+Version: '5.7.39'  socket: '/var/lib/mysql/mysql.sock'  port: 3306  MySQL Community Server (GPL)
+2023-11-03T06:11:39.264188Z 0 [Note] InnoDB: Buffer pool(s) load completed at 231103 14:11:39
+2023-11-03T06:11:39.346855Z 4 [Note] Aborted connection 4 to db: 'smp' user: 'root' host: 'localhost' (Got an error reading communication packets)
+2023-11-03T07:28:36.764418Z 9 [ERROR] /usr/sbin/mysqld: Incorrect key file for table './smp/log_1.MYI'; try to repair it
+2023-11-03T07:28:36.764441Z 9 [ERROR] /usr/sbin/mysqld: Incorrect key file for table './smp/log_1.MYI'; try to repair it
+2023-11-03T07:28:36.764446Z 9 [ERROR] /usr/sbin/mysqld: Incorrect key file for table './smp/log_1.MYI'; try to repair it
+2023-11-03T07:28:36.764462Z 9 [ERROR] /usr/sbin/mysqld: Incorrect key file for table './smp/log_1.MYI'; try to repair it
 ```
 
 ## 表锁  
@@ -488,4 +936,10 @@ redis-server日志
 ```sh
 127.0.0.1:6379> ping
 (error) MISCONF Redis is configured to save RDB snapshots, but it is currently not able to persist on disk. Commands that may modify the data set are disabled, because this instance is configured to report errors during writes if RDB snapshotting fails (stop-writes-on-bgsave-error option). Please check the Redis logs for details about the RDB error.
+```
+
+## 数据库初始化
+
+```sh
+CREATE DATABASE IF NOT EXISTS RUNOOB DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;
 ```
