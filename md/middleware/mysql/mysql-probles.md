@@ -4,9 +4,18 @@
   - [如何手工复现`表损坏`](#如何手工复现表损坏)
 - [centos7 mysql启动问题](#centos7-mysql启动问题)
 - [mysql启动异常](#mysql启动异常)
+  - [`ibdata1` 损坏](#ibdata1-损坏)
+  - [`ib_logfile0`文件损坏](#ib_logfile0文件损坏)
+  - [`ibtmp1`文件损坏](#ibtmp1文件损坏)
+  - [三个文件都损坏和删除](#三个文件都损坏和删除)
+  - [`innodb_force_recovery = 2`](#innodb_force_recovery--2)
+  - [源码分析](#源码分析)
 - [表锁](#表锁)
   - [表锁异常场景](#表锁异常场景)
   - [mysql表锁测试](#mysql表锁测试)
+- [没有磁盘空间](#没有磁盘空间)
+- [数据库初始化](#数据库初始化)
+
 
 
 ## Mysql 表修复  
@@ -672,6 +681,86 @@ Version: '5.7.39'  socket: '/var/lib/mysql/mysql.sock'  port: 3306  MySQL Commun
 2023-11-03T07:28:36.764462Z 9 [ERROR] /usr/sbin/mysqld: Incorrect key file for table './smp/log_1.MYI'; try to repair it
 ```
 
+### 源码分析
+
+错误提示:`ut_a(addr.page == FIL_NULL || addr.boffset >= FIL_PAGE_DATA);`
+<br>
+<div align=center>
+<img src="../../../res/golang/mysql_start_error_1.jpg" width="100%"></img>  
+</div>
+<br>
+
+提示加载的地址都为0(`page`,`boffset`), 调用栈如下:
+```sh
+libc.so.6!raise (Unknown Source:0)
+libc.so.6!abort (Unknown Source:0)
+ut_dbg_assertion_failed(const char * expr, const char * file, ulint line) (storage/innobase/ut/ut0dbg.cc:75)
+flst_read_addr(const fil_faddr_t * faddr, mtr_t * mtr) (storage/innobase/include/fut0lst.ic:93)
+flst_get_prev_addr(const flst_node_t * node, mtr_t * mtr) (storage/innobase/include/fut0lst.ic:176)
+trx_purge_rseg_get_next_history_log(trx_rseg_t * rseg, ulint * n_pages_handled) (storage/innobase/trx/trx0purge.cc:1299)
+trx_purge_get_next_rec(ulint * n_pages_handled, mem_heap_t * heap) (storage/innobase/trx/trx0purge.cc:1493)
+trx_purge_fetch_next_rec(roll_ptr_t * roll_ptr, ulint * n_pages_handled, mem_heap_t * heap) (storage/innobase/trx/trx0purge.cc:1623)
+trx_purge_attach_undo_recs(ulint n_purge_threads, trx_purge_t * purge_sys, ulint batch_size) (storage/innobase/trx/trx0purge.cc:1698)
+trx_purge(ulint n_purge_threads, ulint batch_size, bool truncate) (storage/innobase/trx/trx0purge.cc:1862)
+srv_do_purge(ulint n_threads, ulint * n_total_purged) (storage/innobase/srv/srv0srv.cc:2646)
+srv_purge_coordinator_thread(void * arg) (storage/innobase/srv/srv0srv.cc:2818)
+libpthread.so.0!start_thread (Unknown Source:0)
+libc.so.6!clone (Unknown Source:0)
+```
+
+是一个独立的线程检测:
+```sh
+/********************************************************************
+Starts InnoDB and creates a new database if database files
+are not found and the user wants.
+@return DB_SUCCESS or error code */
+dberr_t
+innobase_start_or_create_for_mysql(void)
+/*====================================*/
+{
+
+os_thread_create(
+			srv_purge_coordinator_thread,
+			NULL, thread_ids + 5 + SRV_MAX_N_IO_THREADS);
+```
+
+从目前来看就是mysql启动时，发现有些历史数据没有恢复，要从日志中恢复数据，读取要恢复的数据时，发现`addr.boffset`为0，所以就失败了。  
+
+```sh
+---
+LOG
+---
+Log sequence number 19942129274
+Log flushed up to   19942129274
+Pages flushed up to 19942129274
+Last checkpoint at  19942129246
+0 pending log flushes, 0 pending chkp writes
+8 log i/o's done, 0.00 log i/o's/second
+```
+> 查看日志序列，是否有未恢复的日志  
+
+<br>
+<div align=center>
+<img src="../../../res/golang/mysql_start_error_2.png" width="65%"></img>  
+</div>
+<br>
+
+```sh
+2023-12-05T01:53:34.910153Z 0 [Note] InnoDB: Highest supported file format is Barracuda.
+2023-12-05T01:53:34.924691Z 0 [Note] InnoDB: Log scan progressed past the checkpoint lsn 19942129164
+2023-12-05T01:53:34.924710Z 0 [Note] InnoDB: Doing recovery: scanned up to log sequence number 19942129173
+2023-12-05T01:53:34.924713Z 0 [Note] InnoDB: Database was not shutdown normally!
+2023-12-05T01:53:34.924715Z 0 [Note] InnoDB: Starting crash recovery.
+2023-12-05T01:53:34.935581Z 0 [ERROR] InnoDB: Page [page id: space=0, page number=7] log sequence number 19942129237 is in the future! Current system log sequence number 19942129182.
+2023-12-05T01:53:34.935596Z 0 [ERROR] InnoDB: Your database may be corrupt or you may have copied the InnoDB tablespace but not the InnoDB log files. Please refer to http://dev.mysql.com/doc/refman/5.7/en/forcing-innodb-recovery.html for information about forcing recovery.
+2023-12-05T01:53:34.935766Z 0 [ERROR] InnoDB: Page [page id: space=0, page number=5] log sequence number 19942129237 is in the future! Current system log sequence number 19942129182.
+2023-12-05T01:53:34.935771Z 0 [ERROR] InnoDB: Your database may be corrupt or you may have copied the InnoDB tablespace but not the InnoDB log files. Please refer to http://dev.mysql.com/doc/refman/5.7/en/forcing-innodb-recovery.html for information about forcing recovery.
+2023-12-05T01:53:35.072065Z 0 [Note] InnoDB: Removed temporary tablespace data file: "ibtmp1"
+2023-12-05T01:53:35.072083Z 0 [Note] InnoDB: Creating shared tablespace for temporary tables
+2023-12-05T01:53:35.072126Z 0 [Note] InnoDB: Setting file './ibtmp1' size to 12 MB. Physically writing the file full; Please wait ...
+```
+这里是启动发现`LSN`对不上，还有些数据没有恢复，但是`InnoDB log files`没有了  
+
 ## 表锁  
 ### 表锁异常场景  
 出现异常时会锁表，无法释放
@@ -718,6 +807,26 @@ ERROR 1146 (42S02): Table 'audit.flow_datas_pop3' doesn't exist
 mysql> select * from information_schema.TABLES where table_name='flow_datas_pop3';
 Empty set (0.00 sec)
 ```
+
+https://dev.mysql.com/doc/refman/5.7/en/innodb-on-disk-structures.html
+```sh
+14.6 InnoDB On-Disk Structures
+14.6.1 Tables                        .frm Files
+14.6.2 Indexes                       .ibd Files
+14.6.3 Tablespaces                   System/File-Per-Table/General/Undo/Temporary Tablespace
+14.6.4 InnoDB Data Dictionary         
+14.6.5 Doublewrite Buffer
+14.6.6 Redo Log
+14.6.7 Undo Logs
+```
+
+<br>
+<div align=center>
+<img src="../../../res/golang/mysql_start_error_3.jpg" width="100%"></img>  
+</div>
+<br>
+
+**最终确定初始环境有问题，就存在异常断电保存的问题。**
 
 ### mysql表锁测试  
 
