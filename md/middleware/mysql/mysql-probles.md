@@ -761,6 +761,26 @@ Last checkpoint at  19942129246
 ```
 这里是启动发现`LSN`对不上，还有些数据没有恢复，但是`InnoDB log files`没有了  
 
+https://dev.mysql.com/doc/refman/5.7/en/innodb-on-disk-structures.html
+```sh
+14.6 InnoDB On-Disk Structures
+14.6.1 Tables                        .frm Files
+14.6.2 Indexes                       .ibd Files
+14.6.3 Tablespaces                   System/File-Per-Table/General/Undo/Temporary Tablespace
+14.6.4 InnoDB Data Dictionary         
+14.6.5 Doublewrite Buffer
+14.6.6 Redo Log
+14.6.7 Undo Logs
+```
+
+<br>
+<div align=center>
+<img src="../../../res/golang/mysql_start_error_3.jpg" width="100%"></img>  
+</div>
+<br>
+
+**最终确定初始环境有问题，就存在异常断电保存的问题。**
+
 ## 表锁  
 ### 表锁异常场景  
 出现异常时会锁表，无法释放
@@ -807,26 +827,6 @@ ERROR 1146 (42S02): Table 'audit.flow_datas_pop3' doesn't exist
 mysql> select * from information_schema.TABLES where table_name='flow_datas_pop3';
 Empty set (0.00 sec)
 ```
-
-https://dev.mysql.com/doc/refman/5.7/en/innodb-on-disk-structures.html
-```sh
-14.6 InnoDB On-Disk Structures
-14.6.1 Tables                        .frm Files
-14.6.2 Indexes                       .ibd Files
-14.6.3 Tablespaces                   System/File-Per-Table/General/Undo/Temporary Tablespace
-14.6.4 InnoDB Data Dictionary         
-14.6.5 Doublewrite Buffer
-14.6.6 Redo Log
-14.6.7 Undo Logs
-```
-
-<br>
-<div align=center>
-<img src="../../../res/golang/mysql_start_error_3.jpg" width="100%"></img>  
-</div>
-<br>
-
-**最终确定初始环境有问题，就存在异常断电保存的问题。**
 
 ### mysql表锁测试  
 
