@@ -1052,3 +1052,101 @@ redis-server日志
 ```sh
 CREATE DATABASE IF NOT EXISTS RUNOOB DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;
 ```
+
+## mysql 导入报错问题
+
+```sh
+mysql -uroot -p -D audit --verbose < init_v1.0.0.sql 
+```
+
+> `--verbose`  可以显示出执行每个sql语句的状态
+
+```sh
+--------------
+CREATE TABLE `jwt_blacklists`
+(
+    `id`         bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `jwt`        text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT 'jwt',
+    `created_at` datetime(3) NULL DEFAULT NULL,
+    `updated_at` datetime(3) NULL DEFAULT NULL,
+    `deleted_at` datetime(3) NULL DEFAULT NULL,
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX        `idx_jwt_blacklists_deleted_at`(`deleted_at`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic
+--------------
+
+--------------
+DROP TABLE IF EXISTS `license_record`
+--------------
+
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+PAGER set to stdout
+ERROR at line 349: Unknown command '\"'.
+```
+
+> 这就表明执行到 DROP TABLE IF EXISTS `license_record` 语句之后就报错了  
+
+## mysqldump备份参数  
+
+`mysqldump` 是一个常用的 MySQL 数据库备份工具，可以用来生成数据库的一个完整的 SQL 脚本文件。以下是一些常用的 `mysqldump` 参数：
+
+1. **-u 或 --user**：指定连接数据库的用户名。
+2. **-p 或 --password**：用于提供要连接的数据库用户的密码。如果单独使用 `-p`，将会在执行命令后提示输入密码，以避免在命令行中显示密码。
+3. **-h 或 --host**：连接到远程主机上的 MySQL 服务器时使用的主机名或IP地址。
+4. **--port**：连接到 MySQL 服务器时使用的端口号。
+5. **-B 或 --databases**：跟在其后的是要备份的数据库名称，可以备份多个数据库。
+6. **--all-databases**：备份所有的数据库。
+7. **-t 或 --no-create-info**：不导出创建表的语句（即只导出数据）。
+8. **-d 或 --no-data**：不导出任何数据，只导出数据库结构（即只导出表结构）。
+9. **--skip-lock-tables**：禁用锁表操作。这允许你在某些只读事务模式下运行 `mysqldump`。
+10. **--single-transaction**：在导出过程中使用单一事务，这对于 InnoDB 表格是一个一致性的选择。
+11. **--quick**：对于大表，直接从服务器传输结果，而不是先把它们缓存在内存中，这有助于减少内存使用。
+12. **--hex-blob**：导出 BLOB 字段时使用十六进制语法。
+13. **--set-gtid-purged**：设置在输出文件中包含 GTID 信息的方式，选项通常有 `OFF`，`ON` 和 `AUTO`。
+14. **--ignore-table**：忽略备份某个特定的表。
+15. **--where**：只导出符合特定条件的行。
+16. **-r 或 --result-file**：将输出直接写入文件，而不是标准输出。
+17. **--opt**：这是默认开启的选项，包含了多个用于优化备份的参数，如 `--add-drop-table`，`--add-locks`，`--create-options`，`--disable
+
+keys`，`--extended-insert`，`--lock-tables`，`--quick`，`--set-charset` 等。
+
+18. **--add-drop-table**：在每个 `CREATE TABLE` 语句之前增加一个 `DROP TABLE IF EXISTS` 语句，以便在恢复时首先删除表格（如果存在）。
+19. **--complete-insert**：生成包含列名称的 `INSERT` 语句，这样的 SQL 文件更易于阅读。
+20. **--compress**：在客户端和服务器之间传输数据时使用压缩。
+21. **--default-character-set**：指定用于连接 MySQL 服务器的默认字符集。
+22. **--routines**：包括存储过程和函数在内的备份。
+23. **--triggers**：包括触发器的备份。
+24. **--events**：备份事件调度器中的事件。
+25. **--master-data**：将二进制日志位置和文件名添加到输出中，这在设置复制环境时很有用。
+26. **--ssl-***：各种 SSL 选项，用于通过 SSL 连接到服务器。
+
+这些参数可以组合使用来满足备份需求。例如，如果你想备份整个数据库结构和数据到一个文件中，可以使用如下命令：
+
+```bash
+mysqldump -u username -p --all-databases > all_databases.sql
+```
+
+备份一个数据库:
+```bash
+mysqldump -u username -p -B test > all_databases.sql
+```
+> 备份`test`数据库  
+
+如果你只想备份数据库结构，不包括数据：
+
+```bash
+mysqldump -u username -p --no-data --all-databases > all_databases_structure.sql
+```
+
+请务必根据自己的具体需求选择合适的参数组合。在使用 `mysqldump` 时，也要注意对生成的备份文件进行适当的安全存储和管理，因为它们包含了数据库的敏感信息。
