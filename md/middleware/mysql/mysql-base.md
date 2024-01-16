@@ -263,7 +263,36 @@ ZIP_PAGE_SIZE: 0
 
 ## 安装mysql 
 
-- ### CentOs7 安装 Mysql5.7 
+### docker安装mysql  
+
+https://hub.docker.com/_/mysql  
+
+centos7/ubuntu开启ip转发功能  
+```sh
+vim /etc/sysctl.conf 
+
+# 添加
+net.ipv4.ip_forward = 1
+
+# 加载一下
+sysctl -p
+
+# 查看是否生效
+sysctl -a | grep -i ip_forward 
+```
+
+`docker stats`  查看容器状态  
+```sh
+CONTAINER ID   NAME                 CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O    PIDS
+60e5e93a0c44   mysql                0.07%     217.5MiB / 4.685GiB   4.
+```
+
+```sh
+docker run --restart=always --name mysql -e MYSQL_ROOT_PASSWORD='root' -p 3306:3306 -d mysql:5.7
+```
+> 可以使用自己的数据目录，增加挂载目录即可。  
+
+### CentOs7 安装 Mysql5.7 
 
 下载mysql源安装包 
 ```shell
