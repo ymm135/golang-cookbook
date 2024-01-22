@@ -1,4 +1,9 @@
-# 源码调试 
+- # 源码调试 
+
+目录:  
+- [编译源码](#编译源码)
+- [调试编译过程](#调试编译过程)
+
 
 ## 编译源码  
 go源码下载地址`https://go.dev/dl/go1.16.9.src.tar.gz`, 放到到路径为`/Users/zero/go/sdk/source`，go源码路径为`/Users/zero/go/sdk/source1.16.9/go`  

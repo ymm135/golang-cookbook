@@ -1,13 +1,28 @@
-# 大数据统计与分析Demo
-## [SZT-bigdata](https://github.com/ymm135/SZT-bigdata)    
+- # 大数据统计与分析Demo
+- ## [SZT-bigdata](https://github.com/ymm135/SZT-bigdata)    
 该项目主要分析深圳通刷卡数据，通过大数据技术角度来研究深圳地铁客运能力，探索深圳地铁优化服务的方向；  
+
+目录:  
+- [架构图](#架构图)
+- [环境搭建](#环境搭建)
+  - [Flume fluːm](#flume-fluːm)
+  - [HBase `Hadoop Database`](#hbase-hadoop-database)
+  - [HDFS](#hdfs)
+  - [Hive haɪv](#hive-haɪv)
+  - [Hue](#hue)
+  - [Impala](#impala)
+  - [Kafka Zookeeper](#kafka-zookeeper)
+  - [Oozie](#oozie)
+  - [Spark](#spark)
+  - [YARN](#yarn)
+- [配置及运行](#配置及运行)
 
 
 ## 架构图
 
 <br>
 <div align=center>
-    <img src="../../res/SZT-bigdata-2+.png" width="100%"></img>  
+    <img src="../../../res/SZT-bigdata-2+.png" width="100%"></img>  
 </div>
 <br>
 

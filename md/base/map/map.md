@@ -1,4 +1,20 @@
-# Map 
+- # Map 
+
+目录:  
+- [数据结构](#数据结构)
+	- [散列表(Hash Table)](#散列表hash-table)
+	- [gdb 查看map数据结构](#gdb-查看map数据结构)
+	- [源码查看map数据结构](#源码查看map数据结构)
+	- [通过debug源码查看map结构](#通过debug源码查看map结构)
+- [Hash函数](#hash函数)
+- [MAP基本操作](#map基本操作)
+	- [增加、写入](#增加写入)
+	- [读取](#读取)
+	- [删除](#删除)
+	- [扩容](#扩容)
+- [通过IDEA调试map源码](#通过idea调试map源码)
+
+
 ## 数据结构
 [参考文章](https://draveness.me/golang/docs/part2-foundation/ch03-datastructure/golang-hashmap/)  
 ![哈希表](../../../res/hash_map.png)      

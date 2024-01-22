@@ -9,6 +9,8 @@
 - [GMP 模型](#gmp-模型)
 	- [GMP 调试](#gmp-调试)
 	- [GMP之间的关系](#gmp之间的关系)
+
+
 ## 测试代码
 ```go
 func main() {

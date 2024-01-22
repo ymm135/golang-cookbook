@@ -1,5 +1,14 @@
-# ES基础
-## [官网安装](https://www.elastic.co/guide/en/elastic-stack/6.8/installing-elastic-stack.html)  
+- # ES基础 
+
+目录:  
+- [docker搭建es 6.8](#docker搭建es-68)
+- [使用elasticsearch head插件](#使用elasticsearch-head插件)
+  - [查看节点信息](#查看节点信息)
+  - [索引](#索引)
+- [使用kibana](#使用kibana)
+  - [安装](#安装)
+
+- ## [官网安装](https://www.elastic.co/guide/en/elastic-stack/6.8/installing-elastic-stack.html) 
 
 ## docker搭建es 6.8
 
@@ -122,7 +131,6 @@ docker run -d --name kibana --link elasticsearch -p 5601:5601  docker.elastic.co
 
 ![kibana](../../../res/kibana.png)  
 
-### 
 
 
 

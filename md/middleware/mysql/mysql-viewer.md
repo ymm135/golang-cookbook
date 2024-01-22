@@ -2,6 +2,12 @@
 
 [mysql优化官方文档](https://dev.mysql.com/doc/refman/5.7/en/optimization.html)  
 
+- [mysql 5.7 视图原理](#mysql-57-视图原理)
+  - [视图介绍](#视图介绍)
+  - [视图的操作](#视图的操作)
+  - [视图性能分析](#视图性能分析)
+
+
 ## 视图介绍  
 MySQL从5.0.1版本开始提供视图功能。  
 

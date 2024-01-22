@@ -20,6 +20,12 @@
   - [触发器](#触发器)
   - [事务控制和锁定语句](#事务控制和锁定语句)
   - [安装mysql](#安装mysql)
+    - [docker安装mysql](#docker安装mysql)
+    - [CentOs7 安装 Mysql5.7](#centos7-安装-mysql57)
+- [mysql 日常维护](#mysql-日常维护)
+  - [配置及启动](#配置及启动)
+  - [数据迁移](#数据迁移)
+
 
 
 # 用于日常开发的知识  
@@ -579,6 +585,42 @@ $ sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
 $ apparmor_parser -R /etc/apparmor.d/disable/usr.sbin.mysqld
 ```
 
+## 运行配置查看  
+
+目前出现的问题是无法远程连接mysql数据库，本地密码及用户配置正确，防火墙也关闭了。最终发现是两个`mysqld.conf`的配置文件`bind_address = 120.0.0.1`导致的  
+
+下次在遇到类似问题，可以使用`SHOW VARIABLES`查看当前运行配置  
+
+```sh
+mysql> SHOW VARIABLES LIKE '%bind%';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| bind_address  | *     |
++---------------+-------+
+1 row in set (0.00 sec)
+
+mysql> SHOW VARIABLES LIKE '%data%';
++---------------------------------------+------------------------+
+| Variable_name                         | Value                  |
++---------------------------------------+------------------------+
+| character_set_database                | latin1                 |
+| collation_database                    | latin1_swedish_ci      |
+| datadir                               | /var/lib/mysql/        |
+| innodb_data_file_path                 | ibdata1:12M:autoextend |
+| innodb_data_home_dir                  |                        |
+| innodb_stats_on_metadata              | OFF                    |
+| innodb_temp_data_file_path            | ibtmp1:12M:autoextend  |
+| max_length_for_sort_data              | 1024                   |
+| metadata_locks_cache_size             | 1024                   |
+| metadata_locks_hash_instances         | 8                      |
+| myisam_data_pointer_size              | 6                      |
+| performance_schema_max_metadata_locks | -1                     |
+| skip_show_database                    | OFF                    |
+| updatable_views_with_limit            | YES                    |
++---------------------------------------+------------------------+
+14 rows in set (0.00 sec)
+```
 
 
 

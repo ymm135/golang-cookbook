@@ -1,4 +1,12 @@
-# 接口    
+- # 接口    
+
+目录:  
+
+- [实例](#实例)
+- [数据结构](#数据结构)
+
+
+## 实例
 [code](../../../code/base/object/interface/base-interface.go)  
 ```go
 package main

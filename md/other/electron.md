@@ -2,12 +2,16 @@
 
 目录:
 - [小试牛刀](#小试牛刀)
+  - [electron-api-demos](#electron-api-demos)
   - [简介](#简介)
   - [环境搭建](#环境搭建)
+- [开发](#开发)
+  - [开发工具](#开发工具)
 - [疑问拓展](#疑问拓展)
 - [vscode开发工具是`Electron`？](#vscode开发工具是electron)
 
 
+- ## https://www.electronjs.org/
 
 ## 小试牛刀 
 
@@ -21,6 +25,28 @@ WebKit 是一个开源的网页渲染引擎，它负责解析 HTML、CSS 代码�
 
 > https://github.com/electron/electron  
 
+
+### electron-api-demos
+
+https://github.com/electron/electron-api-demos
+
+前置条件  `npm install electron -g`  
+```sh
+$ git clone https://github.com/electron/electron-api-demos
+$ cd electron-api-demos
+$ npm install
+$ npm start
+```
+
+
+<br>
+<div align=center>
+    <img src="../../res/electron-demo-1.png" width="80%"></img>  
+</div>
+<br>
+
+
+### 简介
 
 如果您是在说使用 Web 技术（HTML, CSS, JavaScript）来创建一个具有图形用户界面的本地 Windows 应用程序，并且想要在点击按钮时显示一个“Hello”对话框，那么通常这涉及到使用 Electron 或 NW.js 这样的框架。这些框架允许开发人员使用 Web 技术来构建跨平台的桌面应用程序。
 
@@ -113,13 +139,27 @@ app.on('activate', () => {
 
 最后，如果你指的是使用 WebKit 直接开发 Windows 应用程序，那么这通常涉及到更底层的编程，例如使用 C++ 和一个类似于 Qt 的框架来嵌入 WebKit。然而，Electron 已经成为了使用 Web 技术创建桌面应用程序的主流方式，因为它简化了开发过程，并且提供了丰富的 API。
 
-### 简介
-
 ### 环境搭建
+
+## 开发
+### 开发工具  
+
+https://www.electronjs.org/fiddle
+
+<br>
+<div align=center>
+    <img src="../../res/fiddle.png" width="80%"></img>  
+</div>
+<br>
+
+
+推荐使用`vscode`  
+https://www.electronjs.org/docs/latest/tutorial/debugging-vscode  
+
 
 
 ## 疑问拓展  
-## vscode开发工具是`Electron`？
+### vscode开发工具是`Electron`？
 
 Visual Studio Code（VSCode）是一个由微软开发的开源代码编辑器。它是使用 Electron 框架开发的，Electron 允许使用前端技术如 HTML、CSS 和 JavaScript 来开发跨平台的桌面应用程序。
 

@@ -1,4 +1,13 @@
-# gin参数绑定
+- # gin参数绑定
+
+目录:  
+- [通过反射解析query参数](#通过反射解析query参数)
+	- [shouldBindQuery源码](#shouldbindquery源码)
+- [自己动手写的demo](#自己动手写的demo)
+- [reflect.New实现动态代理](#reflectnew实现动态代理)
+
+
+
 ## 通过反射解析query参数
 ### shouldBindQuery源码
 比如需要解析query参数，填充的结构体为:  

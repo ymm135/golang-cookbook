@@ -18,6 +18,11 @@
     - [mysql tabview](#mysql-tabview)
     - [mysql 基本信息](#mysql-基本信息)
     - [perf 监测mysql 内存](#perf-监测mysql-内存)
+- [疑问解答](#疑问解答)
+  - [`show tables` 看不到某些表](#show-tables-看不到某些表)
+  - [performance\_schema虚拟表](#performance_schema虚拟表)
+- [mysql cpu占用](#mysql-cpu占用)
+
 
 
 ## ubuntu基础环境搭建

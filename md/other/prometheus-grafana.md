@@ -13,6 +13,7 @@ https://github.com/yunlzheng/prometheus-book
   - [prometheus](#prometheus-1)
     - [自定义监控指标](#自定义监控指标)
     - [prometheus.yml](#prometheusyml)
+  - [grafana模版](#grafana模版)
   - [mysql](#mysql)
     - [alert](#alert)
   - [logging日志统计](#logging日志统计)
@@ -20,6 +21,8 @@ https://github.com/yunlzheng/prometheus-book
   - [Promtail配置](#promtail配置)
   - [可视化](#可视化)
   - [服务器部署流程](#服务器部署流程)
+  - [Traces](#traces)
+
 
 
 <br>

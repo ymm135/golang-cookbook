@@ -1,6 +1,13 @@
 # rabbitmq 基础  
 [官网](https://www.rabbitmq.com/)  
 
+- [rabbitmq 基础](#rabbitmq-基础)
+  - [docker 安装](#docker-安装)
+  - [java 发送与订阅](#java-发送与订阅)
+  - [go 发送与订阅](#go-发送与订阅)
+  - [队列上线配置](#队列上线配置)
+
+
 ## docker 安装
 
 ```shell

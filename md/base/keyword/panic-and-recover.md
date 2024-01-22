@@ -1,4 +1,12 @@
-# panic and recover  
+- # panic and recover  
+
+目录:  
+- [样例](#样例)
+	- [panic](#panic)
+	- [recover](#recover)
+- [数据结构](#数据结构)
+
+
 两个关键字的作用:  
 - `panic` 能够改变程序的控制流，调用 `panic` 后会立刻停止执行当前函数的剩余代码，并在当前 Goroutine 中递归执行调用方的 defer；
 - `recover` 可以中止 `panic` 造成的程序崩溃(`recover` 只有在发生 `panic` 之后调用才会生效)。它是一个只能在 `defer` 中发挥作用的函数，在其他作用域中调用不会发挥作用；

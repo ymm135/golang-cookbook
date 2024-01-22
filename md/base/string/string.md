@@ -1,4 +1,14 @@
-# string  
+- # string  
+
+目录:  
+- [字符串声明](#字符串声明)
+- [数据结构](#数据结构)
+- [字符串内容可修改](#字符串内容可修改)
+- [字符串赋值](#字符串赋值)
+- [字符串类型拼接](#字符串类型拼接)
+- [类型转换(参考Go 语言设计与实现)](#类型转换参考go-语言设计与实现)
+
+
 [参考文章](https://draveness.me/golang/docs/part2-foundation/ch03-datastructure/golang-string/)
 
 ## 字符串声明

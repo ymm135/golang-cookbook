@@ -1,4 +1,11 @@
-# Socket通信  
+- # Socket通信  
+
+目录:  
+- [socket架构及流程](#socket架构及流程)
+- [socket 数据结构](#socket-数据结构)
+- [测试数据](#测试数据)
+
+
 [维基百科](https://zh.wikipedia.org/wiki/%E7%B6%B2%E8%B7%AF%E6%8F%92%E5%BA%A7)  
 网络套接字（英语：Network socket；又译网络套接字、网络接口、网络插槽）在计算机科学中是电脑网络中进程间资料流的端点。使用以网际协议（Internet Protocol）为通信基础的网络套接字，称为网际套接字（Internet socket）。因为网际协议的流行，现代绝大多数的网络套接字，都是属于网际套接字。
 

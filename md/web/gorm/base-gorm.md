@@ -1,5 +1,10 @@
-## gorm基础  
+- # gorm基础  
 [官网](https://gorm.io/index.html)  
+
+目录:  
+- [CRUD](#crud)
+- [实现](#实现)
+
 
 ## CRUD 
 [code](../../../code/middleware/gorm/base/main.go)  

@@ -1,4 +1,12 @@
-# 结构体  
+- # 结构体  
+
+目录:  
+- [示例](#示例)
+- [数据结构](#数据结构)
+- [结构体如何调用方法](#结构体如何调用方法)
+
+
+## 示例
 [code](code/base/object/struct/base-struct.go)   
 ```go
 package main

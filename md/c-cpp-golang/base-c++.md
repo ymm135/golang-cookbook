@@ -1,6 +1,7 @@
+- # C++
 [学习课程链接](https://coding.imooc.com/learn/list/414.html)  
 
-### 目录
+目录:  
 - [基础语法](#基础语法)
   - [c++概况](#c概况)
   - [编译型语言](#编译型语言)
@@ -31,10 +32,10 @@
   - [CPP程序的存储区域划分](#cpp程序的存储区域划分)
   - [RAII 资源获取即初始化（Resource Acquisition Is Initialization）](#raii-资源获取即初始化resource-acquisition-is-initialization)
   - [智能指针](#智能指针)
-    - [auto_prt (c++11标准已经废弃，c++17已经正式删除)](#auto_prt-c11标准已经废弃c17已经正式删除)
-    - [unique_ptr](#unique_ptr)
-    - [shared_prt](#shared_prt)
-    - [weak_ptr](#weak_ptr)
+    - [auto\_prt (c++11标准已经废弃，c++17已经正式删除)](#auto_prt-c11标准已经废弃c17已经正式删除)
+    - [unique\_ptr](#unique_ptr)
+    - [shared\_prt](#shared_prt)
+    - [weak\_ptr](#weak_ptr)
   - [引用(指向变量地址的指针)](#引用指向变量地址的指针)
 - [基础句法](#基础句法)
   - [图灵机和三种基本结构](#图灵机和三种基本结构)
@@ -84,6 +85,8 @@
   - [Bug分析](#bug分析)
 - [GUI开发](#gui开发)
 - [陷阱与经验](#陷阱与经验)
+
+
 
 ## 基础语法
 ### c++概况 
