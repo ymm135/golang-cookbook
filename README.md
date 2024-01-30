@@ -57,6 +57,8 @@
     - [mysql 双机热备部署](md/middleware/mysql/mysql-ha.md)  
   - **nginx**
     - [nginx基础](md/middleware/nginx/nginx-base.md)  
+    - [nginx http核心模块](md/middleware/nginx/nginx-http.md)  
+    - [nginx 1.24.0源码调试](md/middleware/nginx/nginx-1.24.0.md)  
 
   - **es** 
     - [es基础](md/middleware/es/es-base.md)
