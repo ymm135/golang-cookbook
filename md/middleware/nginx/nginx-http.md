@@ -1,6 +1,15 @@
 - # nginx-http-core  
 
 目录:  
+- [基础知识](#基础知识)
+  - [http 模块](#http-模块)
+  - [server 模块](#server-模块)
+  - [nginx配置测试`nginx -t`](#nginx配置测试nginx--t)
+  - [项目一般配置](#项目一般配置)
+- [疑问及拓展](#疑问及拓展)
+  - [HTTP 严格传输安全 (HSTS) 和 NGINX](#http-严格传输安全-hsts-和-nginx)
+  - [websocket配置](#websocket配置)
+
 
 ## 基础知识 
 
